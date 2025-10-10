@@ -8,6 +8,7 @@
 import SwiftUI
 import PhotosUI
 import CoreData
+import CoreLocation
 
 struct PhotoEntryEditorView: View {
     @Environment(\.managedObjectContext) var managedObjectContext
@@ -21,34 +22,76 @@ struct PhotoEntryEditorView: View {
     @State private var location: String = ""
     
     @State private var isGeneratingCaption = false
+    @State private var showingCamera = false
+    @State private var showingImageSourcePicker = false
+    @State private var isFetchingLocation = false
+    
     @StateObject private var aiService = AIService()
+    @StateObject private var locationManager = LocationManager()
     
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Photo Picker
-                    PhotosPicker(
-                        selection: $selectedPhotos,
-                        maxSelectionCount: 5,
-                        matching: .images
-                    ) {
-                        VStack(spacing: 15) {
-                            Image(systemName: "photo.on.rectangle.angled")
-                                .font(.system(size: 50))
-                                .foregroundColor(.purple)
-                            
-                            Text(loadedImages.isEmpty ? "Add Photos" : "Add More Photos")
-                                .font(.headline)
-                                .foregroundColor(.purple)
+                    // Photo Source Buttons
+                    HStack(spacing: 15) {
+                        // Take Photo Button
+                        Button(action: { 
+                            #if targetEnvironment(simulator)
+                            // Camera not available in simulator
+                            print("📷 Camera not available in simulator. Use a physical device.")
+                            #else
+                            showingCamera = true
+                            #endif
+                        }) {
+                            VStack(spacing: 10) {
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.purple)
+                                
+                                Text("Take Photo")
+                                    .font(.subheadline)
+                                    .foregroundColor(.purple)
+                                
+                                #if targetEnvironment(simulator)
+                                Text("(Device only)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                #endif
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 120)
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [10]))
+                                    .foregroundColor(.purple.opacity(0.5))
+                            )
                         }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 150)
-                        .background(
-                            RoundedRectangle(cornerRadius: 15)
-                                .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [10]))
-                                .foregroundColor(.purple.opacity(0.5))
-                        )
+                        .disabled(isSimulator())
+                        
+                        // Choose from Library Button
+                        PhotosPicker(
+                            selection: $selectedPhotos,
+                            maxSelectionCount: 5,
+                            matching: .images
+                        ) {
+                            VStack(spacing: 10) {
+                                Image(systemName: "photo.on.rectangle.angled")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.purple)
+                                
+                                Text(loadedImages.isEmpty ? "Add Photos" : "Add More")
+                                    .font(.subheadline)
+                                    .foregroundColor(.purple)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 120)
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [10]))
+                                    .foregroundColor(.purple.opacity(0.5))
+                            )
+                        }
                     }
                     .onChange(of: selectedPhotos) { oldValue, newValue in
                         loadPhotos()
@@ -94,9 +137,23 @@ struct PhotoEntryEditorView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Location (Optional)")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                        HStack {
+                            Text("Location (Optional)")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            Spacer()
+                            
+                            Button(action: fetchCurrentLocation) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: isFetchingLocation ? "arrow.clockwise" : "location.fill")
+                                    Text(isFetchingLocation ? "Getting..." : "Use Current")
+                                }
+                                .font(.caption)
+                                .foregroundColor(.purple)
+                            }
+                            .disabled(isFetchingLocation)
+                        }
                         
                         TextField("Where was this taken?", text: $location)
                             .textFieldStyle(.roundedBorder)
@@ -160,7 +217,43 @@ struct PhotoEntryEditorView: View {
                     .disabled(loadedImages.isEmpty || content.isEmpty)
                 }
             }
+            .sheet(isPresented: $showingCamera) {
+                CameraView { image in
+                    loadedImages.append(image)
+                    showingCamera = false
+                }
+            }
         }
+    }
+    
+    func fetchCurrentLocation() {
+        isFetchingLocation = true
+        locationManager.requestLocation()
+        
+        // Wait for location update (longer timeout for simulator)
+        let timeout: TimeInterval = isSimulator() ? 5.0 : 2.0
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {
+            if let locationString = locationManager.locationString {
+                location = locationString
+            } else {
+                // Provide helpful message for simulator
+                #if targetEnvironment(simulator)
+                location = "Set location in: Features → Location → Custom..."
+                #else
+                location = "Unable to get location"
+                #endif
+            }
+            isFetchingLocation = false
+        }
+    }
+    
+    func isSimulator() -> Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
     }
     
     func loadPhotos() {
