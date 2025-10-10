@@ -1,0 +1,259 @@
+📘 Project Specification: Memora – AI-Powered Personal & Family Journal
+
+“Your memories, reimagined by AI.”
+
+🌱 1. Vision
+
+Memora is an iOS journaling app that makes writing and reflecting effortless through AI assistance.
+Users can:
+
+Write, speak, or upload photos to create diary entries
+
+Get AI-generated reflections, summaries, or rephrasings
+
+Organize memories into beautiful book-style journals
+
+Choose to write for themselves or for their child
+
+Memora bridges mindfulness, family storytelling, and AI-powered reflection, wrapped in a calm, privacy-focused experience.
+
+🧩 2. Core Features (Functional Breakdown)
+📝 A. Text-Based Journaling
+
+Text editor (Markdown or rich-text compatible)
+
+“Improve with AI” button:
+
+Calls the backend (OpenAI or Anthropic API)
+
+Uses a “tone-preserving” rephrase prompt
+
+Returns 1–3 rephrased versions (user can select)
+
+Auto-save drafts locally using Core Data or Realm
+
+Option to add:
+
+Tags (mood, topic)
+
+Images
+
+Location metadata
+
+🖼️ B. Photo-Based Journaling
+
+User uploads photo(s)
+
+Optional metadata:
+
+Character names (“Melike”, “Uğur”, “Yağız”)
+
+Location (“Göteborg park”)
+
+Date override
+
+Backend AI creates a short descriptive or emotional story from image + metadata.
+
+Photos stored in iCloud Drive (or optionally local-only, for privacy mode).
+
+Implementation:
+
+Use VisionKit or PhotoPicker
+
+For image-to-text description:
+
+Use Apple’s Vision framework for object detection
+
+Optionally augment with GPT-4 Vision API for richer captioning (paid feature)
+
+🎙️ C. Voice Journaling
+
+User records diary via microphone
+
+Audio saved locally first (Core Data + FileManager)
+
+Send audio to Whisper API (or local speech recognition via SFSpeechRecognizer)
+
+Display transcript in editor view
+
+“Improve with AI” button rephrases the transcript
+
+Optional optimization: store transcriptions in plain text (JSON) rather than full audio to reduce cloud costs.
+
+📖 D. Diary Page Presentation (Book Mode)
+
+Custom UI using SwiftUI:
+
+PageViewController-like flipping animation
+
+Themes (Classic, Minimal, Dark Mode, Child Mode)
+
+AI automatically categorizes entries:
+
+Family, Work, Reflection, Milestones, etc.
+
+Users can export full diary as PDF (via PDFKit) or share pages
+
+🔔 E. Smart Notifications
+
+Daily local notifications (using UNUserNotificationCenter)
+
+Adaptive reminders:
+
+Frequency adjusts based on engagement
+
+AI-driven follow-ups:
+
+Backend analyzes last few entries for sentiment
+
+Sends relevant push prompt, e.g.
+
+“You mentioned feeling proud about Uğur’s first day — want to add an update?”
+
+👶 F. Child Journaling Mode
+
+Setup flow asks: “Who is this journal for?”
+
+Options: “Myself” / “My child”
+
+“For my child” unlocks:
+
+Growth milestones templates
+
+Memory tagging (age, photos)
+
+Exportable timeline (PDF scrapbook)
+
+Potential future expansion: allow sharing with partner (with end-to-end encryption).
+
+💎 3. Monetization Model
+Tier	Features	AI Access	Price
+Free	Create text/photo/voice entries, limited themes	5 AI uses/day	Free
+Premium	Unlimited AI improvements, voice transcription, advanced layouts, multiple journals	Unlimited	~$4.99/month or $39.99/year
+Family Plan	Adds multiple child journals, shared access	Unlimited	~$7.99/month
+
+Trial logic: 14-day full premium access upon install, then revert to free.
+Use StoreKit 2 APIs for seamless in-app purchases and restoration.
+
+☁️ 4. Data Storage Strategy
+Local (Device-Side)
+
+Core Data or Realm for all diary metadata
+
+Media stored in app sandbox (FileManager)
+
+AI responses cached locally to avoid repeated calls
+
+Cloud (for backup / sync)
+
+iCloud support via CloudKit
+
+Each user’s data container is private to their Apple ID
+
+No shared servers = better privacy compliance, lower hosting cost
+
+Optional (Custom backend for analytics + AI)
+
+If you need central AI orchestration:
+
+Use a lightweight Node.js or FastAPI backend hosted on Render / Railway
+
+Functions:
+
+Handle AI requests (text rephrase, photo captioning, notification context)
+
+Log anonymized usage data (for engagement insights)
+
+Store only minimal, non-personalized data (for GDPR compliance)
+
+🤖 5. AI Integration Plan
+Primary AI Tasks
+Task	Model	Optimization
+Text rephrasing / summarization	GPT-4o mini / Claude 3 Haiku	Cache results client-side
+Voice transcription	Whisper API (or Apple Speech)	Batch requests; offload to background thread
+Image captioning (photo journal)	GPT-4 Vision	Offer as premium-only
+AI prompts / reminders	GPT-4o mini	Generate short text server-side daily
+Cost Control
+
+Use tiered AI access (free = limited, premium = full)
+
+Batch API calls: send full-day entries instead of per-entry calls
+
+Cache rephrased entries locally to avoid duplicate costs
+
+Use lightweight model (GPT-4o mini) for quick on-device reflection or summarization
+
+If you reach scale, you can add AI quota pooling or rate limiting per user to manage API costs gracefully.
+
+🔒 6. Privacy & Compliance
+
+Journals stored encrypted locally (Keychain + CryptoKit)
+
+No text or photos sent to servers without explicit AI-triggered action
+
+Transparent privacy mode toggle (“Keep everything on device”)
+
+GDPR/CCPA compliant; parental mode hides sensitive analytics
+
+🧠 7. Tech Stack Summary
+Layer	Technology
+Frontend (iOS)	SwiftUI + Combine + Core Data
+Cloud Sync	iCloud CloudKit
+Voice Recognition	Whisper API or Apple Speech Framework
+AI Backend	Node.js / FastAPI (optional) calling OpenAI API
+Storage	iCloud Drive + local sandbox for media
+Analytics	Optional: Firebase Analytics or Mixpanel (anonymous mode)
+Payments	StoreKit 2
+Push Notifications	Apple Push Notification Service (APNs)
+🧭 8. Future Roadmap Ideas
+
+AI sentiment dashboard (“Your month in words”)
+
+“Memory rewind” — weekly AI summary of diary themes
+
+Collaborative family journals
+
+Child mode → auto-generate growth summaries
+
+On-device AI models (e.g., Apple’s upcoming “CoreML GPT” integration)
+
+📦 Folder Structure Suggestion (for Cursor)
+/MemoraApp
+ ├── /Models
+ │     ├── DiaryEntry.swift
+ │     ├── JournalTheme.swift
+ │     └── UserProfile.swift
+ ├── /Views
+ │     ├── EntryEditorView.swift
+ │     ├── PhotoUploadView.swift
+ │     ├── BookPageView.swift
+ │     └── SettingsView.swift
+ ├── /Services
+ │     ├── AIService.swift
+ │     ├── SpeechService.swift
+ │     ├── StorageService.swift
+ │     └── NotificationService.swift
+ ├── /Networking
+ │     └── APIClient.swift
+ ├── /Resources
+ │     └── Themes.json
+ ├── AppDelegate.swift
+ └── MemoraApp.swift
+
+✳️ Summary
+
+Memora brings together:
+
+Seamless journaling (text, photo, voice)
+
+Smart AI reflection (rephrase, summarize, follow-up)
+
+Elegant presentation (book-like pages)
+
+Privacy-first design
+
+Emotional differentiation (adult or child journaling)
+
+Sustainable freemium model to manage AI costs
+
+It’s built for longevity, emotional value, and mindful tech use — a calm space powered by AI, not defined by it.

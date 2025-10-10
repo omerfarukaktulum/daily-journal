@@ -1,0 +1,33 @@
+# Xcode
+*.xcuserstate
+*.xcuserdatad
+xcuserdata/
+*.xcworkspace/xcuserdata/
+project.xcworkspace/xcuserdata/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Build
+Build/
+DerivedData/
+
+# CocoaPods
+Pods/
+
+# Swift Package Manager
+.swiftpm/
+
+# Xcode User Settings
+*.xcuserstate
+*.xccheckout
+*.moved-aside
+*.xcscmblueprint
+
+# Ignore user-specific files
+UserInterfaceState.xcuserstate
+WorkspaceSettings.xcsettings
+xcschememanagement.plist
+
