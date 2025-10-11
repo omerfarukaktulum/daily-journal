@@ -15,36 +15,8 @@ struct BookView: View {
         animation: .default
     ) var entries: FetchedResults<DiaryEntry>
     
-    @State private var selectedFilter: FilterType = .all
-    @State private var searchText = ""
     @State private var selectedEntry: DiaryEntry?
     @State private var showingEntryDetail = false
-    
-    enum FilterType: String, CaseIterable {
-        case all = "All"
-        case text = "Text"
-        case photo = "Photo"
-        case voice = "Voice"
-    }
-    
-    var filteredEntries: [DiaryEntry] {
-        var result = Array(entries)
-        
-        // Filter by type
-        if selectedFilter != .all {
-            result = result.filter { $0.entryType == selectedFilter.rawValue.lowercased() }
-        }
-        
-        // Filter by search text
-        if !searchText.isEmpty {
-            result = result.filter { entry in
-                entry.content.localizedCaseInsensitiveContains(searchText) ||
-                (entry.title?.localizedCaseInsensitiveContains(searchText) ?? false)
-            }
-        }
-        
-        return result
-    }
     
     var uniqueTags: [(tag: String, count: Int)] {
         var tagCounts: [String: Int] = [:]
@@ -158,55 +130,21 @@ struct BookView: View {
                         }
                     }
                     
-                    // Filter Tabs
+                    // Recent Entries Header
                     if !entries.isEmpty {
-                        VStack(alignment: .leading, spacing: 15) {
-                            Text("All Entries")
-                                .font(.title3.bold())
-                                .padding(.horizontal)
-                            
-                            // Filter Picker
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 10) {
-                                    ForEach(FilterType.allCases, id: \.self) { filter in
-                                        FilterChip(
-                                            title: filter.rawValue,
-                                            isSelected: selectedFilter == filter,
-                                            action: { selectedFilter = filter }
-                                        )
-                                    }
-                                }
-                                .padding(.horizontal)
-                            }
-                            
-                            // Search Bar
-                            HStack {
-                                Image(systemName: "magnifyingglass")
-                                    .foregroundColor(.secondary)
-                                
-                                TextField("Search entries...", text: $searchText)
-                                
-                                if !searchText.isEmpty {
-                                    Button(action: { searchText = "" }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                            }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
+                        Text("Recent Entries")
+                            .font(.title3.bold())
                             .padding(.horizontal)
-                        }
+                            .padding(.top, 10)
                     }
                     
                     // Entries List
-                    if filteredEntries.isEmpty {
-                    EmptyBookView()
+                    if entries.isEmpty {
+                        EmptyBookView()
                             .padding(.top, 40)
-                } else {
+                    } else {
                         LazyVStack(spacing: 15) {
-                            ForEach(filteredEntries, id: \.id) { entry in
+                            ForEach(Array(entries.prefix(20)), id: \.id) { entry in
                                 Button(action: {
                                     selectedEntry = entry
                                     showingEntryDetail = true
@@ -214,7 +152,7 @@ struct BookView: View {
                                     JournalEntryCard(entry: entry)
                                 }
                                 .buttonStyle(PlainButtonStyle())
-                                }
+                            }
                         }
                         .padding(.horizontal)
                     }
@@ -229,14 +167,6 @@ struct BookView: View {
                     Menu {
                         Button(action: {}) {
                             Label("Export as PDF", systemImage: "doc.fill")
-                        }
-                        
-                        Button(action: {}) {
-                            Label("Sort by Date", systemImage: "calendar")
-                        }
-                        
-                        Button(action: {}) {
-                            Label("Sort by Type", systemImage: "square.grid.2x2")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -262,23 +192,23 @@ struct StatCard: View {
     let color: Color
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.title)
+                .font(.title3)
                 .foregroundColor(color)
             
             Text(value)
-                .font(.system(size: 28, weight: .bold))
+                .font(.system(size: 20, weight: .bold))
             
             Text(title)
-                .font(.caption)
+                .font(.caption2)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
         }
-        .frame(width: 120)
-        .padding()
+        .frame(width: 85)
+        .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: 15)
+            RoundedRectangle(cornerRadius: 12)
                 .fill(Color.white)
                 .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
         )
@@ -290,20 +220,23 @@ struct TagStatCard: View {
     let count: Int
     
     var body: some View {
-        VStack(spacing: 8) {
+        HStack(spacing: 6) {
             Text("#\(tag)")
-                    .font(.headline)
-                    .foregroundColor(.purple)
-                
-            Text("\(count) entries")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+                .font(.subheadline.bold())
+                .foregroundColor(.purple)
+            
+            Text("\(count)")
+                .font(.caption)
+                .foregroundColor(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Capsule().fill(Color.purple))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.purple.opacity(0.1))
+            Capsule()
+                .fill(Color.purple.opacity(0.15))
         )
     }
 }
@@ -333,26 +266,6 @@ struct LocationStatCard: View {
                 .fill(Color.white)
                 .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
         )
-    }
-}
-
-struct FilterChip: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-                        Text(title)
-                .font(.subheadline.bold())
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? Color.purple : Color(.systemGray5))
-                )
-                .foregroundColor(isSelected ? .white : .primary)
-        }
     }
 }
 
