@@ -17,16 +17,24 @@ struct BookView: View {
     
     @State private var selectedEntry: DiaryEntry?
     @State private var showingEntryDetail = false
-    @State private var selectedTags: Set<String> = []
+    @State private var selectedFilters: Set<String> = []
     
     var filteredEntries: [DiaryEntry] {
-        if selectedTags.isEmpty {
+        if selectedFilters.isEmpty {
             return Array(entries)
         }
         
         return entries.filter { entry in
-            guard let entryTags = entry.tagsArray else { return false }
-            return !selectedTags.isDisjoint(with: entryTags)
+            let entryTags = entry.tagsArray ?? []
+            let entryLocation = entry.location ?? ""
+            
+            // Check if any selected filter matches entry's tags or location
+            for filter in selectedFilters {
+                if entryTags.contains(filter) || entryLocation == filter {
+                    return true
+                }
+            }
+            return false
         }
     }
     
@@ -66,86 +74,63 @@ struct BookView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Stats Overview
+                    // Stats Overview - Improved Design
                     if !entries.isEmpty {
-                        VStack(alignment: .leading, spacing: 15) {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 15) {
-                                    StatCard(
-                                        icon: "doc.text.fill",
-                                        title: "Total Entries",
-                                        value: "\(entries.count)",
-                                        color: .purple
-                                    )
-                                    
-                                    StatCard(
-                                        icon: "photo.fill",
-                                        title: "Photo Entries",
-                                        value: "\(entries.filter { $0.entryType == "photo" }.count)",
-                                        color: .blue
-                                    )
-                                    
-                                    StatCard(
-                                        icon: "mic.fill",
-                                        title: "Voice Entries",
-                                        value: "\(entries.filter { $0.entryType == "voice" }.count)",
-                                        color: .pink
-                                    )
-                                    
-                                    StatCard(
-                                        icon: "sparkles",
-                                        title: "AI Improved",
-                                        value: "\(entries.filter { $0.aiImproved }.count)",
-                                        color: .orange
-                                    )
-                                }
-                                .padding(.horizontal)
-                            }
-                        }
+                        StatsOverviewCard(
+                            totalEntries: entries.count,
+                            photoEntries: entries.filter { $0.entryType == "photo" }.count,
+                            voiceEntries: entries.filter { $0.entryType == "voice" }.count,
+                            aiImproved: entries.filter { $0.aiImproved }.count
+                        )
+                        .padding(.horizontal)
                         
-                        // Tag Filters
-                        if !uniqueTags.isEmpty {
+                        // Unified Filters - Tags + Locations
+                        if !uniqueTags.isEmpty || !uniqueLocations.isEmpty {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 10) {
-                                    // All tag (default)
-                                    FilterableTagCard(
-                                        tag: "All",
+                                    // All filter (default)
+                                    FilterChip(
+                                        icon: "line.3.horizontal.decrease.circle",
+                                        label: "All",
                                         count: entries.count,
-                                        isSelected: selectedTags.isEmpty,
+                                        isSelected: selectedFilters.isEmpty,
                                         action: {
-                                            selectedTags.removeAll()
+                                            selectedFilters.removeAll()
                                         }
                                     )
                                     
+                                    // Tag filters
                                     ForEach(uniqueTags, id: \.tag) { item in
-                                        FilterableTagCard(
-                                            tag: item.tag,
+                                        FilterChip(
+                                            icon: "tag.fill",
+                                            label: item.tag,
                                             count: item.count,
-                                            isSelected: selectedTags.contains(item.tag),
+                                            isSelected: selectedFilters.contains(item.tag),
                                             action: {
-                                                if selectedTags.contains(item.tag) {
-                                                    selectedTags.remove(item.tag)
+                                                if selectedFilters.contains(item.tag) {
+                                                    selectedFilters.remove(item.tag)
                                                 } else {
-                                                    selectedTags.insert(item.tag)
+                                                    selectedFilters.insert(item.tag)
                                                 }
                                             }
                                         )
                                     }
-                                }
-                                .padding(.horizontal)
-                            }
-                        }
-                        
-                        // Top Locations
-                        if !uniqueLocations.isEmpty {
-                            VStack(alignment: .leading, spacing: 15) {
-                                Text("Frequent Places")
-                                    .font(.title3.bold())
-                                    .padding(.horizontal)
-                                
-                                VStack(spacing: 10) {
+                                    
+                                    // Location filters
                                     ForEach(uniqueLocations, id: \.location) { item in
-                                        LocationStatCard(location: item.location, count: item.count)
+                                        FilterChip(
+                                            icon: "location.fill",
+                                            label: item.location,
+                                            count: item.count,
+                                            isSelected: selectedFilters.contains(item.location),
+                                            action: {
+                                                if selectedFilters.contains(item.location) {
+                                                    selectedFilters.remove(item.location)
+                                                } else {
+                                                    selectedFilters.insert(item.location)
+                                                }
+                                            }
+                                        )
                                     }
                                 }
                                 .padding(.horizontal)
@@ -160,7 +145,7 @@ struct BookView: View {
                                 .font(.system(size: 60))
                                 .foregroundColor(.purple.opacity(0.5))
                             
-                            Text("No entries with selected tags")
+                            Text("No entries match selected filters")
                                 .font(.headline)
                                 .foregroundColor(.secondary)
                         }
@@ -212,10 +197,64 @@ struct BookView: View {
 
 // MARK: - Supporting Views
 
-struct StatCard: View {
+struct StatsOverviewCard: View {
+    let totalEntries: Int
+    let photoEntries: Int
+    let voiceEntries: Int
+    let aiImproved: Int
+    
+    var body: some View {
+        HStack(spacing: 20) {
+            StatItem(
+                icon: "doc.text.fill",
+                value: "\(totalEntries)",
+                label: "Entries",
+                color: .purple
+            )
+            
+            Divider()
+                .frame(height: 40)
+            
+            StatItem(
+                icon: "photo.fill",
+                value: "\(photoEntries)",
+                label: "Photos",
+                color: .blue
+            )
+            
+            Divider()
+                .frame(height: 40)
+            
+            StatItem(
+                icon: "mic.fill",
+                value: "\(voiceEntries)",
+                label: "Voice",
+                color: .pink
+            )
+            
+            Divider()
+                .frame(height: 40)
+            
+            StatItem(
+                icon: "sparkles",
+                value: "\(aiImproved)",
+                label: "AI",
+                color: .orange
+            )
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 5)
+        )
+    }
+}
+
+struct StatItem: View {
     let icon: String
-    let title: String
     let value: String
+    let label: String
     let color: Color
     
     var body: some View {
@@ -225,20 +264,19 @@ struct StatCard: View {
                 .foregroundColor(color)
             
             Text(value)
-                .font(.system(size: 20, weight: .bold))
+                .font(.title3.bold())
+            
+            Text(label)
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
-        .frame(width: 70)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
-        )
+        .frame(maxWidth: .infinity)
     }
 }
 
-struct FilterableTagCard: View {
-    let tag: String
+struct FilterChip: View {
+    let icon: String
+    let label: String
     let count: Int
     let isSelected: Bool
     let action: () -> Void
@@ -246,9 +284,14 @@ struct FilterableTagCard: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
-                Text(tag == "All" ? "All" : "#\(tag)")
+                Image(systemName: icon)
+                    .font(.caption)
+                    .foregroundColor(isSelected ? .white : .purple)
+                
+                Text(label)
                     .font(.subheadline.bold())
                     .foregroundColor(isSelected ? .white : .purple)
+                    .lineLimit(1)
                 
                 Text("\(count)")
                     .font(.caption)
@@ -268,34 +311,6 @@ struct FilterableTagCard: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
-    }
-}
-
-struct LocationStatCard: View {
-    let location: String
-    let count: Int
-    
-    var body: some View {
-        HStack {
-            Image(systemName: "location.fill")
-                .foregroundColor(.purple)
-            
-            Text(location)
-                .font(.body)
-                .lineLimit(1)
-            
-            Spacer()
-            
-            Text("\(count)")
-                .font(.headline)
-                .foregroundColor(.purple)
-        }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 1)
-        )
     }
 }
 
