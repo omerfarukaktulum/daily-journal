@@ -325,39 +325,30 @@ struct StatFilterChip: View {
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 // Icon
                 Image(systemName: icon)
                     .font(.system(size: 20))
-                    .foregroundColor(isSelected ? .purple : .gray)
+                    .foregroundColor(isSelected ? .white : .purple)
                 
-                // Count
-                Text("\(count)")
-                    .font(.headline.bold())
-                    .foregroundColor(isSelected ? .purple : .primary)
-                
-                // Label
-                Text(label)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                // Label and Count on same line
+                HStack(spacing: 4) {
+                    Text(label)
+                        .font(.caption.bold())
+                        .foregroundColor(isSelected ? .white : .purple)
+                    
+                    Text("\(count)")
+                        .font(.caption2)
+                        .foregroundColor(isSelected ? .white.opacity(0.8) : .purple.opacity(0.7))
+                }
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 6)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white)
-                    .shadow(color: isSelected ? Color.purple.opacity(0.2) : Color.black.opacity(0.05), radius: isSelected ? 6 : 3, x: 0, y: isSelected ? 3 : 1)
+                    .fill(isSelected ? Color.purple : Color.purple.opacity(0.15))
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(
-                        isSelected ? Color.purple : Color.clear,
-                        lineWidth: isSelected ? 2 : 0
-                    )
-            )
-            .scaleEffect(isSelected ? 1.02 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -378,20 +369,14 @@ struct FilterChip: View {
                     .foregroundColor(isSelected ? .white : .purple)
                 
                 Text(label)
-                    .font(.subheadline.bold())
+                    .font(.caption.bold())
                     .foregroundColor(isSelected ? .white : .purple)
                     .lineLimit(1)
                 
                 if let count = count {
                     Text("\(count)")
-                        .font(.caption)
-                        .foregroundColor(isSelected ? .white.opacity(0.8) : .purple)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(isSelected ? Color.white.opacity(0.3) : Color.purple.opacity(0.2))
-                        )
+                        .font(.caption2)
+                        .foregroundColor(isSelected ? .white.opacity(0.8) : .purple.opacity(0.7))
                 }
             }
             .padding(.horizontal, 12)
@@ -420,10 +405,10 @@ struct JournalEntryCard: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                 Text(entry.createdAt, style: .date)
-                    .font(.headline)
+                    .font(.subheadline.bold())
                 
                 Text(entry.createdAt, style: .time)
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundColor(.secondary)
             }
                 
@@ -433,14 +418,14 @@ struct JournalEntryCard: View {
                 HStack(spacing: 8) {
                     if let mood = entry.mood, !mood.isEmpty {
                         Text(mood.prefix(2))
-                            .font(.title3)
+                            .font(.body)
                     }
                     
                     if entry.aiImproved {
                         Image(systemName: "sparkles")
                             .font(.caption)
                             .foregroundColor(.orange)
-                            .padding(6)
+                            .padding(5)
                             .background(Circle().fill(Color.orange.opacity(0.1)))
                     }
                 }
@@ -449,7 +434,7 @@ struct JournalEntryCard: View {
             // Title (if exists)
                     if let title = entry.title, !title.isEmpty {
                         Text(title)
-                    .font(.title3.bold())
+                    .font(.callout.bold())
                             .foregroundColor(.primary)
                     .lineLimit(1)
                     }
@@ -457,7 +442,7 @@ struct JournalEntryCard: View {
             // Content Preview (text only for photo entries)
             if !contentPreview.isEmpty {
                 Text(contentPreview)
-                        .font(.body)
+                        .font(.caption)
                                 .foregroundColor(.secondary)
                     .lineLimit(3)
             }

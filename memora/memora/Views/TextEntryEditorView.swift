@@ -34,6 +34,7 @@ struct TextEntryEditorView: View {
     @State private var aiSuggestions: [String] = []
     @State private var isLoadingAI = false
     @State private var showingAILimitAlert = false
+    @State private var usedAI = false // Track if AI was used
     
     @StateObject private var aiService = AIService()
     @StateObject private var locationManager = LocationManager()
@@ -256,6 +257,7 @@ struct TextEntryEditorView: View {
             .sheet(isPresented: $showingAIImprovement) {
                 AIImprovementSheet(suggestions: aiSuggestions) { selectedVersion in
                     content = selectedVersion
+                    usedAI = true // Mark that AI was used
                     showingAIImprovement = false
                 }
             }
@@ -360,6 +362,7 @@ struct TextEntryEditorView: View {
         entry.title = title.isEmpty ? nil : title
         entry.mood = mood.isEmpty ? nil : mood
         entry.location = location.isEmpty ? nil : location
+        entry.aiImproved = usedAI // Set AI improved flag
         
         if !tags.isEmpty {
             if let jsonData = try? JSONEncoder().encode(tags),
