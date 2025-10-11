@@ -131,12 +131,13 @@ struct StatItem: View {
     let icon: String
     let value: String
     let label: String
+    var color: Color = .purple // Default to purple for backward compatibility
     
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.title2)
-                .foregroundColor(.purple)
+                .foregroundColor(color)
             
             Text(value)
                 .font(.title3.bold())

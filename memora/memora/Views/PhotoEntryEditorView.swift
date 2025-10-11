@@ -15,11 +15,18 @@ struct PhotoEntryEditorView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
     
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \DiaryEntry.createdAt, ascending: false)],
+        animation: .default
+    ) var existingEntries: FetchedResults<DiaryEntry>
+    
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var loadedImages: [UIImage] = []
     @State private var content: String = ""
     @State private var characterNames: String = ""
     @State private var location: String = ""
+    @State private var tags: [String] = []
+    @State private var newTag: String = ""
     
     @State private var isGeneratingCaption = false
     @State private var showingCamera = false
@@ -198,6 +205,65 @@ struct PhotoEntryEditorView: View {
                                     .stroke(Color.purple.opacity(0.3), lineWidth: 1)
                             )
                     }
+                    
+                    // Tags
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Tags")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        FlowLayout(spacing: 8) {
+                            ForEach(tags, id: \.self) { tag in
+                                TagChip(text: tag) {
+                                    tags.removeAll { $0 == tag }
+                                }
+                            }
+                        }
+                        
+                        HStack {
+                            TextField("Add a tag...", text: $newTag)
+                                .textFieldStyle(.roundedBorder)
+                                .onSubmit {
+                                    if !newTag.isEmpty && !tags.contains(newTag) {
+                                        tags.append(newTag)
+                                        newTag = ""
+                                    }
+                                }
+                            
+                            Button(action: {
+                                if !newTag.isEmpty && !tags.contains(newTag) {
+                                    tags.append(newTag)
+                                    newTag = ""
+                                }
+                            }) {
+                                Image(systemName: "plus.circle.fill")
+                                    .foregroundColor(.purple)
+                                    .font(.title2)
+                            }
+                            .disabled(newTag.isEmpty)
+                        }
+                        
+                        // Tag Suggestions
+                        if !suggestedTags.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Suggested")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                
+                                FlowLayout(spacing: 8) {
+                                    ForEach(suggestedTags, id: \.self) { tag in
+                                        SuggestedTagChip(text: tag, isAdded: tags.contains(tag)) {
+                                            if tags.contains(tag) {
+                                                tags.removeAll { $0 == tag }
+                                            } else {
+                                                tags.append(tag)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 .padding()
             }
@@ -224,6 +290,26 @@ struct PhotoEntryEditorView: View {
                 }
             }
         }
+    }
+    
+    var suggestedTags: [String] {
+        var tagCounts: [String: Int] = [:]
+        
+        for entry in existingEntries {
+            if let entryTags = entry.tagsArray {
+                for tag in entryTags {
+                    tagCounts[tag, default: 0] += 1
+                }
+            }
+        }
+        
+        // Return top 5 most used tags that aren't already added
+        return tagCounts
+            .sorted { $0.value > $1.value }
+            .map { $0.key }
+            .filter { !tags.contains($0) }
+            .prefix(5)
+            .map { $0 }
     }
     
     func fetchCurrentLocation() {
@@ -339,6 +425,13 @@ struct PhotoEntryEditorView: View {
         )
         
         entry.location = location.isEmpty ? nil : location
+        
+        if !tags.isEmpty {
+            if let jsonData = try? JSONEncoder().encode(tags),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                entry.tags = jsonString
+            }
+        }
         
         if !characterNames.isEmpty {
             let namesArray = characterNames.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }

@@ -18,6 +18,7 @@ struct BookView: View {
     @State private var selectedEntry: DiaryEntry?
     @State private var showingEntryDetail = false
     @State private var selectedFilters: Set<String> = []
+    @State private var selectionOrder: [String] = [] // Track order of selections
     
     var filteredEntries: [DiaryEntry] {
         if selectedFilters.isEmpty {
@@ -38,21 +39,38 @@ struct BookView: View {
         }
     }
     
-    var uniqueTags: [(tag: String, count: Int)] {
-        var tagCounts: [String: Int] = [:]
+    var uniqueTags: [(tag: String, count: Int, lastUsed: Date)] {
+        var tagInfo: [String: (count: Int, lastUsed: Date)] = [:]
         
         for entry in entries {
-            if let tags = entry.tagsArray {
-                for tag in tags {
-                    tagCounts[tag, default: 0] += 1
+            if let entryTags = entry.tagsArray {
+                for tag in entryTags {
+                    let existingInfo = tagInfo[tag]
+                    let newCount = (existingInfo?.count ?? 0) + 1
+                    let latestDate = max(existingInfo?.lastUsed ?? .distantPast, entry.createdAt ?? .distantPast)
+                    tagInfo[tag] = (count: newCount, lastUsed: latestDate)
                 }
             }
         }
         
-        return tagCounts.map { (tag: $0.key, count: $0.value) }
-            .sorted { $0.count > $1.count }
-            .prefix(5)
-            .map { $0 }
+        // Sort by count descending, then by latest use if count is equal
+        return tagInfo
+            .sorted { first, second in
+                if first.value.count == second.value.count {
+                    return first.value.lastUsed > second.value.lastUsed
+                }
+                return first.value.count > second.value.count
+            }
+            .map { (tag: $0.key, count: $0.value.count, lastUsed: $0.value.lastUsed) }
+    }
+    
+    var orderedTags: [(tag: String, count: Int, lastUsed: Date)] {
+        // Selected tags (in selection order) come first, then unselected tags
+        let selectedTags = selectionOrder.compactMap { selectedTag in
+            uniqueTags.first { $0.tag == selectedTag }
+        }
+        let unselectedTags = uniqueTags.filter { !selectionOrder.contains($0.tag) }
+        return selectedTags + unselectedTags
     }
     
     var uniqueLocations: [(location: String, count: Int)] {
@@ -88,19 +106,20 @@ struct BookView: View {
                         if !uniqueTags.isEmpty || !uniqueLocations.isEmpty {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 10) {
-                                    // All filter (default)
+                                    // All filter (default) - no count badge
                                     FilterChip(
                                         icon: "line.3.horizontal.decrease.circle",
                                         label: "All",
-                                        count: entries.count,
+                                        count: nil,
                                         isSelected: selectedFilters.isEmpty,
                                         action: {
                                             selectedFilters.removeAll()
+                                            selectionOrder.removeAll()
                                         }
                                     )
                                     
-                                    // Tag filters
-                                    ForEach(uniqueTags, id: \.tag) { item in
+                                    // Tag filters (ordered: selected first in selection order, then unselected by count)
+                                    ForEach(orderedTags, id: \.tag) { item in
                                         FilterChip(
                                             icon: "tag.fill",
                                             label: item.tag,
@@ -109,8 +128,10 @@ struct BookView: View {
                                             action: {
                                                 if selectedFilters.contains(item.tag) {
                                                     selectedFilters.remove(item.tag)
+                                                    selectionOrder.removeAll { $0 == item.tag }
                                                 } else {
                                                     selectedFilters.insert(item.tag)
+                                                    selectionOrder.append(item.tag)
                                                 }
                                             }
                                         )
@@ -126,8 +147,10 @@ struct BookView: View {
                                             action: {
                                                 if selectedFilters.contains(item.location) {
                                                     selectedFilters.remove(item.location)
+                                                    selectionOrder.removeAll { $0 == item.location }
                                                 } else {
                                                     selectedFilters.insert(item.location)
+                                                    selectionOrder.append(item.location)
                                                 }
                                             }
                                         )
@@ -251,33 +274,10 @@ struct StatsOverviewCard: View {
     }
 }
 
-struct StatItem: View {
-    let icon: String
-    let value: String
-    let label: String
-    let color: Color
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(color)
-            
-            Text(value)
-                .font(.title3.bold())
-            
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
 struct FilterChip: View {
     let icon: String
     let label: String
-    let count: Int
+    let count: Int? // Optional count - nil means don't show count badge
     let isSelected: Bool
     let action: () -> Void
     
@@ -293,15 +293,17 @@ struct FilterChip: View {
                     .foregroundColor(isSelected ? .white : .purple)
                     .lineLimit(1)
                 
-                Text("\(count)")
-                    .font(.caption)
-                    .foregroundColor(isSelected ? .white.opacity(0.8) : .purple)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule()
-                            .fill(isSelected ? Color.white.opacity(0.3) : Color.purple.opacity(0.2))
-                    )
+                if let count = count {
+                    Text("\(count)")
+                        .font(.caption)
+                        .foregroundColor(isSelected ? .white.opacity(0.8) : .purple)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(isSelected ? Color.white.opacity(0.3) : Color.purple.opacity(0.2))
+                        )
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)

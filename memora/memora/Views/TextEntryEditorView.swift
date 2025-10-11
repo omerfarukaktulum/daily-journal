@@ -7,17 +7,25 @@
 
 import SwiftUI
 import CoreData
+import CoreLocation
 
 struct TextEntryEditorView: View {
     @Environment(\.managedObjectContext) var managedObjectContext
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
     
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \DiaryEntry.createdAt, ascending: false)],
+        animation: .default
+    ) var existingEntries: FetchedResults<DiaryEntry>
+    
     @State private var title: String = ""
     @State private var content: String = ""
     @State private var mood: String = ""
     @State private var tags: [String] = []
     @State private var newTag: String = ""
+    @State private var location: String = ""
+    @State private var isFetchingLocation = false
     
     @State private var showingAIImprovement = false
     @State private var aiSuggestions: [String] = []
@@ -25,6 +33,7 @@ struct TextEntryEditorView: View {
     @State private var showingAILimitAlert = false
     
     @StateObject private var aiService = AIService()
+    @StateObject private var locationManager = LocationManager()
     
     var body: some View {
         NavigationStack {
@@ -100,6 +109,30 @@ struct TextEntryEditorView: View {
                         }
                     }
                     
+                    // Location
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Location (Optional)")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            Spacer()
+                            
+                            Button(action: fetchCurrentLocation) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: isFetchingLocation ? "arrow.clockwise" : "location.fill")
+                                    Text(isFetchingLocation ? "Getting..." : "Use Current")
+                                }
+                                .font(.caption)
+                                .foregroundColor(.purple)
+                            }
+                            .disabled(isFetchingLocation)
+                        }
+                        
+                        TextField("Where are you?", text: $location)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    
                     // Tags
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Tags")
@@ -135,6 +168,27 @@ struct TextEntryEditorView: View {
                                     .font(.title2)
                             }
                             .disabled(newTag.isEmpty)
+                        }
+                        
+                        // Tag Suggestions
+                        if !suggestedTags.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Suggested")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                
+                                FlowLayout(spacing: 8) {
+                                    ForEach(suggestedTags, id: \.self) { tag in
+                                        SuggestedTagChip(text: tag, isAdded: tags.contains(tag)) {
+                                            if tags.contains(tag) {
+                                                tags.removeAll { $0 == tag }
+                                            } else {
+                                                tags.append(tag)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -173,6 +227,54 @@ struct TextEntryEditorView: View {
         }
     }
     
+    var suggestedTags: [String] {
+        var tagCounts: [String: Int] = [:]
+        
+        for entry in existingEntries {
+            if let entryTags = entry.tagsArray {
+                for tag in entryTags {
+                    tagCounts[tag, default: 0] += 1
+                }
+            }
+        }
+        
+        // Return top 5 most used tags that aren't already added
+        return tagCounts
+            .sorted { $0.value > $1.value }
+            .map { $0.key }
+            .filter { !tags.contains($0) }
+            .prefix(5)
+            .map { $0 }
+    }
+    
+    func fetchCurrentLocation() {
+        isFetchingLocation = true
+        locationManager.requestLocation()
+        
+        let timeout: TimeInterval = isSimulator() ? 5.0 : 2.0
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {
+            if let locationString = locationManager.locationString {
+                location = locationString
+            } else {
+                #if targetEnvironment(simulator)
+                location = "Set location in: Features → Location → Custom..."
+                #else
+                location = "Unable to get location"
+                #endif
+            }
+            isFetchingLocation = false
+        }
+    }
+    
+    func isSimulator() -> Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
+    
     func improveWithAI() {
         guard appState.canUseAI() else {
             showingAILimitAlert = true
@@ -209,6 +311,7 @@ struct TextEntryEditorView: View {
         
         entry.title = title.isEmpty ? nil : title
         entry.mood = mood.isEmpty ? nil : mood
+        entry.location = location.isEmpty ? nil : location
         
         if !tags.isEmpty {
             if let jsonData = try? JSONEncoder().encode(tags),
@@ -264,6 +367,33 @@ struct TagChip: View {
         .padding(.vertical, 6)
         .background(Capsule().fill(Color.purple.opacity(0.2)))
         .foregroundColor(.purple)
+    }
+}
+
+struct SuggestedTagChip: View {
+    let text: String
+    let isAdded: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Text("#\(text)")
+                    .font(.caption)
+                
+                Image(systemName: isAdded ? "xmark.circle.fill" : "plus.circle.fill")
+                    .font(.caption)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Capsule().fill(isAdded ? Color.purple.opacity(0.2) : Color.purple.opacity(0.1)))
+            .foregroundColor(isAdded ? .purple : .purple.opacity(0.7))
+            .overlay(
+                Capsule()
+                    .strokeBorder(Color.purple.opacity(isAdded ? 0 : 0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

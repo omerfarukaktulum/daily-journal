@@ -10,11 +10,17 @@ import AVFoundation
 import Speech
 import CoreData
 import Combine
+import CoreLocation
 
 struct VoiceEntryRecorderView: View {
     @Environment(\.managedObjectContext) var managedObjectContext
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
+    
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \DiaryEntry.createdAt, ascending: false)],
+        animation: .default
+    ) var existingEntries: FetchedResults<DiaryEntry>
     
     @StateObject private var speechRecognizer = SpeechRecognizer()
     @State private var isRecording = false
@@ -28,6 +34,8 @@ struct VoiceEntryRecorderView: View {
     @State private var mood: String = ""
     @State private var tags: [String] = []
     @State private var newTag: String = ""
+    @State private var location: String = ""
+    @State private var isFetchingLocation = false
     
     @State private var showingAIImprovement = false
     @State private var aiSuggestions: [String] = []
@@ -35,6 +43,7 @@ struct VoiceEntryRecorderView: View {
     @State private var showingAILimitAlert = false
     
     @StateObject private var aiService = AIService()
+    @StateObject private var locationManager = LocationManager()
     
     var body: some View {
         NavigationStack {
@@ -236,6 +245,30 @@ struct VoiceEntryRecorderView: View {
                     }
                 }
                 
+                // Location
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Location (Optional)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Button(action: fetchCurrentLocation) {
+                            HStack(spacing: 4) {
+                                Image(systemName: isFetchingLocation ? "arrow.clockwise" : "location.fill")
+                                Text(isFetchingLocation ? "Getting..." : "Use Current")
+                            }
+                            .font(.caption)
+                            .foregroundColor(.purple)
+                        }
+                        .disabled(isFetchingLocation)
+                    }
+                    
+                    TextField("Where are you?", text: $location)
+                        .textFieldStyle(.roundedBorder)
+                }
+                
                 // Tags
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Tags")
@@ -272,6 +305,27 @@ struct VoiceEntryRecorderView: View {
                         }
                         .disabled(newTag.isEmpty)
                     }
+                    
+                    // Tag Suggestions
+                    if !suggestedTags.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Suggested")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            FlowLayout(spacing: 8) {
+                                ForEach(suggestedTags, id: \.self) { tag in
+                                    SuggestedTagChip(text: tag, isAdded: tags.contains(tag)) {
+                                        if tags.contains(tag) {
+                                            tags.removeAll { $0 == tag }
+                                        } else {
+                                            tags.append(tag)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             .padding()
@@ -306,6 +360,54 @@ struct VoiceEntryRecorderView: View {
         } message: {
             Text("You've used all 5 free AI improvements for today. Upgrade to Premium for unlimited AI features!")
         }
+    }
+    
+    var suggestedTags: [String] {
+        var tagCounts: [String: Int] = [:]
+        
+        for entry in existingEntries {
+            if let entryTags = entry.tagsArray {
+                for tag in entryTags {
+                    tagCounts[tag, default: 0] += 1
+                }
+            }
+        }
+        
+        // Return top 5 most used tags that aren't already added
+        return tagCounts
+            .sorted { $0.value > $1.value }
+            .map { $0.key }
+            .filter { !tags.contains($0) }
+            .prefix(5)
+            .map { $0 }
+    }
+    
+    func fetchCurrentLocation() {
+        isFetchingLocation = true
+        locationManager.requestLocation()
+        
+        let timeout: TimeInterval = isSimulator() ? 5.0 : 2.0
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {
+            if let locationString = locationManager.locationString {
+                location = locationString
+            } else {
+                #if targetEnvironment(simulator)
+                location = "Set location in: Features → Location → Custom..."
+                #else
+                location = "Unable to get location"
+                #endif
+            }
+            isFetchingLocation = false
+        }
+    }
+    
+    func isSimulator() -> Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
     }
     
     func formatDuration(_ duration: TimeInterval) -> String {
@@ -399,6 +501,7 @@ struct VoiceEntryRecorderView: View {
         
         entry.title = title.isEmpty ? nil : title
         entry.mood = mood.isEmpty ? nil : mood
+        entry.location = location.isEmpty ? nil : location
         
         if !tags.isEmpty {
             if let jsonData = try? JSONEncoder().encode(tags),
