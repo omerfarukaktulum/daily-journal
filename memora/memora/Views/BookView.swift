@@ -17,6 +17,18 @@ struct BookView: View {
     
     @State private var selectedEntry: DiaryEntry?
     @State private var showingEntryDetail = false
+    @State private var selectedTags: Set<String> = []
+    
+    var filteredEntries: [DiaryEntry] {
+        if selectedTags.isEmpty {
+            return Array(entries)
+        }
+        
+        return entries.filter { entry in
+            guard let entryTags = entry.tagsArray else { return false }
+            return !selectedTags.isDisjoint(with: entryTags)
+        }
+    }
     
     var uniqueTags: [(tag: String, count: Int)] {
         var tagCounts: [String: Int] = [:]
@@ -57,10 +69,6 @@ struct BookView: View {
                     // Stats Overview
                     if !entries.isEmpty {
                         VStack(alignment: .leading, spacing: 15) {
-                            Text("Overview")
-                                .font(.title2.bold())
-                                .padding(.horizontal)
-                            
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 15) {
                                     StatCard(
@@ -95,21 +103,36 @@ struct BookView: View {
                             }
                         }
                         
-                        // Top Tags
+                        // Tag Filters
                         if !uniqueTags.isEmpty {
-                            VStack(alignment: .leading, spacing: 15) {
-                                Text("Popular Tags")
-                                    .font(.title3.bold())
-                                    .padding(.horizontal)
-                                
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 10) {
-                                        ForEach(uniqueTags, id: \.tag) { item in
-                                            TagStatCard(tag: item.tag, count: item.count)
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 10) {
+                                    // All tag (default)
+                                    FilterableTagCard(
+                                        tag: "All",
+                                        count: entries.count,
+                                        isSelected: selectedTags.isEmpty,
+                                        action: {
+                                            selectedTags.removeAll()
                                         }
+                                    )
+                                    
+                                    ForEach(uniqueTags, id: \.tag) { item in
+                                        FilterableTagCard(
+                                            tag: item.tag,
+                                            count: item.count,
+                                            isSelected: selectedTags.contains(item.tag),
+                                            action: {
+                                                if selectedTags.contains(item.tag) {
+                                                    selectedTags.remove(item.tag)
+                                                } else {
+                                                    selectedTags.insert(item.tag)
+                                                }
+                                            }
+                                        )
                                     }
-                                    .padding(.horizontal)
                                 }
+                                .padding(.horizontal)
                             }
                         }
                         
@@ -130,21 +153,25 @@ struct BookView: View {
                         }
                     }
                     
-                    // Recent Entries Header
-                    if !entries.isEmpty {
-                        Text("Recent Entries")
-                            .font(.title3.bold())
-                            .padding(.horizontal)
-                            .padding(.top, 10)
-                    }
-                    
                     // Entries List
-                    if entries.isEmpty {
+                    if filteredEntries.isEmpty && !entries.isEmpty {
+                        VStack(spacing: 20) {
+                            Image(systemName: "tag.slash")
+                                .font(.system(size: 60))
+                                .foregroundColor(.purple.opacity(0.5))
+                            
+                            Text("No entries with selected tags")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 60)
+                    } else if entries.isEmpty {
                         EmptyBookView()
                             .padding(.top, 40)
                     } else {
                         LazyVStack(spacing: 15) {
-                            ForEach(Array(entries.prefix(20)), id: \.id) { entry in
+                            ForEach(Array(filteredEntries.prefix(20)), id: \.id) { entry in
                                 Button(action: {
                                     selectedEntry = entry
                                     showingEntryDetail = true
@@ -194,18 +221,13 @@ struct StatCard: View {
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.title3)
+                .font(.title2)
                 .foregroundColor(color)
             
             Text(value)
                 .font(.system(size: 20, weight: .bold))
-            
-            Text(title)
-                .font(.caption2)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
         }
-        .frame(width: 85)
+        .frame(width: 70)
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 12)
@@ -215,29 +237,37 @@ struct StatCard: View {
     }
 }
 
-struct TagStatCard: View {
+struct FilterableTagCard: View {
     let tag: String
     let count: Int
+    let isSelected: Bool
+    let action: () -> Void
     
     var body: some View {
-        HStack(spacing: 6) {
-            Text("#\(tag)")
-                .font(.subheadline.bold())
-                .foregroundColor(.purple)
-            
-            Text("\(count)")
-                .font(.caption)
-                .foregroundColor(.white)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Capsule().fill(Color.purple))
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Text(tag == "All" ? "All" : "#\(tag)")
+                    .font(.subheadline.bold())
+                    .foregroundColor(isSelected ? .white : .purple)
+                
+                Text("\(count)")
+                    .font(.caption)
+                    .foregroundColor(isSelected ? .white.opacity(0.8) : .purple)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(isSelected ? Color.white.opacity(0.3) : Color.purple.opacity(0.2))
+                    )
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(isSelected ? Color.purple : Color.purple.opacity(0.15))
+            )
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(
-            Capsule()
-                .fill(Color.purple.opacity(0.15))
-        )
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
