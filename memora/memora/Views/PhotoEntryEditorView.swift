@@ -9,6 +9,7 @@ import SwiftUI
 import PhotosUI
 import CoreData
 import CoreLocation
+import MapKit
 
 struct PhotoEntryEditorView: View {
     @Environment(\.managedObjectContext) var managedObjectContext
@@ -32,9 +33,11 @@ struct PhotoEntryEditorView: View {
     @State private var showingCamera = false
     @State private var showingImageSourcePicker = false
     @State private var isFetchingLocation = false
+    @State private var showingLocationSuggestions = false
     
     @StateObject private var aiService = AIService()
     @StateObject private var locationManager = LocationManager()
+    @StateObject private var locationSearch = LocationSearchService()
     
     var body: some View {
         NavigationStack {
@@ -162,8 +165,48 @@ struct PhotoEntryEditorView: View {
                             .disabled(isFetchingLocation)
                         }
                         
-                        TextField("Where was this taken?", text: $location)
+                        TextField("Where was this taken?", text: $locationSearch.searchQuery)
                             .textFieldStyle(.roundedBorder)
+                            .onChange(of: locationSearch.searchQuery) { oldValue, newValue in
+                                location = newValue
+                                showingLocationSuggestions = !newValue.isEmpty && !locationSearch.suggestions.isEmpty
+                            }
+                        
+                        // Location suggestions
+                        if showingLocationSuggestions && !locationSearch.suggestions.isEmpty {
+                            VStack(alignment: .leading, spacing: 0) {
+                                ForEach(locationSearch.suggestions.prefix(5), id: \.self) { suggestion in
+                                    Button(action: {
+                                        location = suggestion
+                                        locationSearch.searchQuery = suggestion
+                                        showingLocationSuggestions = false
+                                    }) {
+                                        HStack {
+                                            Image(systemName: "location.fill")
+                                                .font(.caption)
+                                                .foregroundColor(.gray)
+                                            
+                                            Text(suggestion)
+                                                .font(.subheadline)
+                                                .foregroundColor(.primary)
+                                                .lineLimit(1)
+                                            
+                                            Spacer()
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 10)
+                                        .background(Color(.systemGray6))
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    
+                                    if suggestion != locationSearch.suggestions.prefix(5).last {
+                                        Divider()
+                                    }
+                                }
+                            }
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+                        }
                     }
                     
                     // AI Generate Caption Button
@@ -322,15 +365,20 @@ struct PhotoEntryEditorView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {
             if let locationString = locationManager.locationString {
                 location = locationString
+                locationSearch.searchQuery = locationString
             } else {
                 // Provide helpful message for simulator
                 #if targetEnvironment(simulator)
-                location = "Set location in: Features → Location → Custom..."
+                let message = "Set location in: Features → Location → Custom..."
+                location = message
+                locationSearch.searchQuery = message
                 #else
                 location = "Unable to get location"
+                locationSearch.searchQuery = "Unable to get location"
                 #endif
             }
             isFetchingLocation = false
+            showingLocationSuggestions = false
         }
     }
     
@@ -373,7 +421,7 @@ struct PhotoEntryEditorView: View {
                 if !location.isEmpty {
                     metadata["location"] = location
                 }
-                metadata["date"] = Date().formatted(date: .long, time: .omitted)
+                // Don't include date - it's already shown in the UI
                 
                 // Simple description - in production, you'd use Vision API or GPT-4 Vision
                 let description = "A precious moment captured in a photo"
@@ -450,6 +498,8 @@ struct PhotoEntryEditorView: View {
         
         do {
             try managedObjectContext.save()
+            
+            // Dismiss first, then show feedback from parent view
             dismiss()
         } catch {
             print("Failed to save entry: \(error)")

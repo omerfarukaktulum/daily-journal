@@ -19,24 +19,34 @@ struct BookView: View {
     @State private var showingEntryDetail = false
     @State private var selectedFilters: Set<String> = []
     @State private var selectionOrder: [String] = [] // Track order of selections
+    @State private var selectedEntryType: String? = nil // "text", "photo", "voice", or nil for all
+    @State private var isTagsExpanded = false // For tag expansion
+    @State private var refreshTrigger = UUID() // Force refresh after edit
     
     var filteredEntries: [DiaryEntry] {
-        if selectedFilters.isEmpty {
-            return Array(entries)
+        var result = Array(entries)
+        
+        // Filter by entry type first
+        if let entryType = selectedEntryType {
+            result = result.filter { $0.entryType == entryType }
         }
         
-        return entries.filter { entry in
-            let entryTags = entry.tagsArray ?? []
-            let entryLocation = entry.location ?? ""
-            
-            // Check if any selected filter matches entry's tags or location
-            for filter in selectedFilters {
-                if entryTags.contains(filter) || entryLocation == filter {
-                    return true
+        // Then filter by tags only (AND logic, no locations)
+        if !selectedFilters.isEmpty {
+            result = result.filter { entry in
+                let entryTags = entry.tagsArray ?? []
+                
+                // Entry must have ALL selected tags
+                for filter in selectedFilters {
+                    if !entryTags.contains(filter) {
+                        return false
+                    }
                 }
+                return true
             }
-            return false
         }
+        
+        return result
     }
     
     var uniqueTags: [(tag: String, count: Int, lastUsed: Date)] {
@@ -88,24 +98,26 @@ struct BookView: View {
             .map { $0 }
     }
     
+    // Computed properties for entry counts (helps compiler)
+    var totalEntriesCount: Int { entries.count }
+    var photoEntriesCount: Int { entries.filter { $0.entryType == "photo" }.count }
+    var voiceEntriesCount: Int { entries.filter { $0.entryType == "voice" }.count }
+    var textEntriesCount: Int { entries.filter { $0.entryType == "text" }.count }
+    var aiImprovedCount: Int { entries.filter { $0.aiImproved }.count }
+    
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Stats Overview - Improved Design
+                    // Stats Overview - Interactive Filters (Grid Layout)
                     if !entries.isEmpty {
-                        StatsOverviewCard(
-                            totalEntries: entries.count,
-                            photoEntries: entries.filter { $0.entryType == "photo" }.count,
-                            voiceEntries: entries.filter { $0.entryType == "voice" }.count,
-                            aiImproved: entries.filter { $0.aiImproved }.count
-                        )
-                        .padding(.horizontal)
+                        statsOverviewGrid
+                            .padding(.horizontal)
                         
-                        // Unified Filters - Tags + Locations
-                        if !uniqueTags.isEmpty || !uniqueLocations.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 10) {
+                        // Tag Filters (2-line limit, no locations)
+                        if !uniqueTags.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                FlowLayout(spacing: 10) {
                                     // All filter (default) - no count badge
                                     FilterChip(
                                         icon: "line.3.horizontal.decrease.circle",
@@ -119,7 +131,7 @@ struct BookView: View {
                                     )
                                     
                                     // Tag filters (ordered: selected first in selection order, then unselected by count)
-                                    ForEach(orderedTags, id: \.tag) { item in
+                                    ForEach(Array(orderedTags.prefix(isTagsExpanded ? orderedTags.count : 8).enumerated()), id: \.element.tag) { index, item in
                                         FilterChip(
                                             icon: "tag.fill",
                                             label: item.tag,
@@ -137,27 +149,34 @@ struct BookView: View {
                                         )
                                     }
                                     
-                                    // Location filters
-                                    ForEach(uniqueLocations, id: \.location) { item in
-                                        FilterChip(
-                                            icon: "location.fill",
-                                            label: item.location,
-                                            count: item.count,
-                                            isSelected: selectedFilters.contains(item.location),
-                                            action: {
-                                                if selectedFilters.contains(item.location) {
-                                                    selectedFilters.remove(item.location)
-                                                    selectionOrder.removeAll { $0 == item.location }
-                                                } else {
-                                                    selectedFilters.insert(item.location)
-                                                    selectionOrder.append(item.location)
-                                                }
+                                    // Show More / Show Less button
+                                    if orderedTags.count > 8 {
+                                        Button(action: {
+                                            withAnimation {
+                                                isTagsExpanded.toggle()
                                             }
-                                        )
+                                        }) {
+                                            HStack(spacing: 6) {
+                                                Image(systemName: isTagsExpanded ? "chevron.up.circle.fill" : "plus.circle.fill")
+                                                    .font(.caption)
+                                                    .foregroundColor(.purple)
+                                                
+                                                Text(isTagsExpanded ? "Show Less" : "+\(orderedTags.count - 8)")
+                                                    .font(.subheadline.bold())
+                                                    .foregroundColor(.purple)
+                                            }
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                            .background(
+                                                Capsule()
+                                                    .fill(Color.purple.opacity(0.15))
+                                            )
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
                                     }
                                 }
-                                .padding(.horizontal)
                             }
+                            .padding(.horizontal)
                         }
                     }
                     
@@ -175,9 +194,9 @@ struct BookView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.top, 60)
                     } else if entries.isEmpty {
-                        EmptyBookView()
+                    EmptyBookView()
                             .padding(.top, 40)
-                    } else {
+                } else {
                         LazyVStack(spacing: 15) {
                             ForEach(Array(filteredEntries.prefix(20)), id: \.id) { entry in
                                 Button(action: {
@@ -185,9 +204,10 @@ struct BookView: View {
                                     showingEntryDetail = true
                                 }) {
                                     JournalEntryCard(entry: entry)
+                                        .id("\(entry.id)-\(entry.modifiedAt.timeIntervalSince1970)") // Force refresh on edit
                                 }
                                 .buttonStyle(PlainButtonStyle())
-                            }
+                                }
                         }
                         .padding(.horizontal)
                     }
@@ -214,63 +234,132 @@ struct BookView: View {
                     EntryDetailView(entry: entry)
                 }
             }
+            .onChange(of: showingEntryDetail) { oldValue, newValue in
+                // When sheet closes, refresh the entries to show any edits
+                if oldValue == true && newValue == false {
+                    // Refresh all entries to pick up changes
+                    if let entry = selectedEntry {
+                        managedObjectContext.refresh(entry, mergeChanges: true)
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Subviews
+    
+    var statsOverviewGrid: some View {
+        HStack(spacing: 10) {
+            // All entries
+            StatFilterChip(
+                icon: "square.grid.2x2",
+                label: "All",
+                count: totalEntriesCount,
+                isSelected: selectedEntryType == nil,
+                gradient: [.purple, .pink],
+                action: {
+                    selectedEntryType = nil
+                }
+            )
+            
+            // Photo entries
+            StatFilterChip(
+                icon: "photo.fill",
+                label: "Photos",
+                count: photoEntriesCount,
+                isSelected: selectedEntryType == "photo",
+                gradient: [.blue, .cyan],
+                action: {
+                    selectedEntryType = selectedEntryType == "photo" ? nil : "photo"
+                }
+            )
+            
+            // Voice entries
+            StatFilterChip(
+                icon: "mic.fill",
+                label: "Voice",
+                count: voiceEntriesCount,
+                isSelected: selectedEntryType == "voice",
+                gradient: [.pink, .orange],
+                action: {
+                    selectedEntryType = selectedEntryType == "voice" ? nil : "voice"
+                }
+            )
+            
+            // Text entries
+            StatFilterChip(
+                icon: "doc.text.fill",
+                label: "Text",
+                count: textEntriesCount,
+                isSelected: selectedEntryType == "text",
+                gradient: [.purple, .indigo],
+                action: {
+                    selectedEntryType = selectedEntryType == "text" ? nil : "text"
+                }
+            )
+            
+            // AI improved
+            StatFilterChip(
+                icon: "sparkles",
+                label: "AI",
+                count: aiImprovedCount,
+                isSelected: false,
+                gradient: [.orange, .yellow],
+                action: {
+                    // TODO: Could add AI filter if needed
+                }
+            )
         }
     }
 }
 
 // MARK: - Supporting Views
 
-struct StatsOverviewCard: View {
-    let totalEntries: Int
-    let photoEntries: Int
-    let voiceEntries: Int
-    let aiImproved: Int
+struct StatFilterChip: View {
+    let icon: String
+    let label: String
+    let count: Int
+    let isSelected: Bool
+    let gradient: [Color]
+    let action: () -> Void
     
     var body: some View {
-        HStack(spacing: 20) {
-            StatItem(
-                icon: "doc.text.fill",
-                value: "\(totalEntries)",
-                label: "Entries",
-                color: .purple
+        Button(action: action) {
+            VStack(spacing: 6) {
+                // Icon
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(isSelected ? .purple : .gray)
+                
+                // Count
+                Text("\(count)")
+                    .font(.headline.bold())
+                    .foregroundColor(isSelected ? .purple : .primary)
+                
+                // Label
+                Text(label)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white)
+                    .shadow(color: isSelected ? Color.purple.opacity(0.2) : Color.black.opacity(0.05), radius: isSelected ? 6 : 3, x: 0, y: isSelected ? 3 : 1)
             )
-            
-            Divider()
-                .frame(height: 40)
-            
-            StatItem(
-                icon: "photo.fill",
-                value: "\(photoEntries)",
-                label: "Photos",
-                color: .blue
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(
+                        isSelected ? Color.purple : Color.clear,
+                        lineWidth: isSelected ? 2 : 0
+                    )
             )
-            
-            Divider()
-                .frame(height: 40)
-            
-            StatItem(
-                icon: "mic.fill",
-                value: "\(voiceEntries)",
-                label: "Voice",
-                color: .pink
-            )
-            
-            Divider()
-                .frame(height: 40)
-            
-            StatItem(
-                icon: "sparkles",
-                value: "\(aiImproved)",
-                label: "AI",
-                color: .orange
-            )
+            .scaleEffect(isSelected ? 1.02 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 5)
-        )
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
@@ -319,66 +408,76 @@ struct FilterChip: View {
 struct JournalEntryCard: View {
     let entry: DiaryEntry
     
+    var contentPreview: String {
+        // For photo entries, return content text only (not photo URLs)
+        guard !entry.content.isEmpty else { return "No content" }
+        return entry.content
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                // Entry type icon
-                Image(systemName: iconForEntryType(entry.entryType))
-                    .foregroundColor(.purple)
-                    .font(.title3)
+            // Header: Date + Time on left, Mood + AI badge on right
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                Text(entry.createdAt, style: .date)
+                    .font(.headline)
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(entry.createdAt, style: .date)
-                        .font(.subheadline.bold())
-                    
-                    Text(entry.createdAt, style: .time)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
+                Text(entry.createdAt, style: .time)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+                
                 Spacer()
                 
-                // Labels
-                HStack(spacing: 6) {
+                // Right side: Mood and AI badge
+                HStack(spacing: 8) {
                     if let mood = entry.mood, !mood.isEmpty {
                         Text(mood.prefix(2))
-                                .font(.caption)
-                        }
-                        
-                        if entry.aiImproved {
-                            Image(systemName: "sparkles")
-                                .font(.caption)
-                                .foregroundColor(.yellow)
-                        }
+                            .font(.title3)
                     }
+                    
+                    if entry.aiImproved {
+                        Image(systemName: "sparkles")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                            .padding(6)
+                            .background(Circle().fill(Color.orange.opacity(0.1)))
+                    }
+                }
             }
             
-            // Title
-            if let title = entry.title, !title.isEmpty {
-                Text(title)
-                    .font(.headline)
+            // Title (if exists)
+                    if let title = entry.title, !title.isEmpty {
+                        Text(title)
+                    .font(.title3.bold())
+                            .foregroundColor(.primary)
                     .lineLimit(1)
+                    }
+                    
+            // Content Preview (text only for photo entries)
+            if !contentPreview.isEmpty {
+                Text(contentPreview)
+                        .font(.body)
+                                .foregroundColor(.secondary)
+                    .lineLimit(3)
             }
             
-            // Content Preview
-            Text(entry.content)
-                .font(.body)
-                .foregroundColor(.secondary)
-                .lineLimit(2)
+            Divider()
             
-            // Tags & Location
-            HStack {
-                    if let tags = entry.tagsArray, !tags.isEmpty {
+            // Footer: Tags and Location
+            HStack(spacing: 12) {
+                if let tags = entry.tagsArray, !tags.isEmpty {
                     HStack(spacing: 4) {
                         Image(systemName: "tag.fill")
                             .font(.caption2)
                             .foregroundColor(.purple)
-                        Text(tags.prefix(2).joined(separator: ", "))
-                                    .font(.caption)
-                                    .foregroundColor(.purple)
-                        if tags.count > 2 {
-                            Text("+\(tags.count - 2)")
+                        Text(tags.prefix(3).map { "#\($0)" }.joined(separator: " "))
                                 .font(.caption)
+                            .foregroundColor(.purple)
+                            .lineLimit(1)
+                        if tags.count > 3 {
+                            Text("+\(tags.count - 3)")
+                                .font(.caption2)
                                 .foregroundColor(.secondary)
                         }
                     }
@@ -388,16 +487,16 @@ struct JournalEntryCard: View {
                     HStack(spacing: 4) {
                         Image(systemName: "location.fill")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.gray)
                         Text(location)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                                    .font(.caption)
+                            .foregroundColor(.gray)
                             .lineLimit(1)
                     }
                 }
             }
         }
-        .padding()
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 15)
                 .fill(Color.white)
@@ -437,43 +536,211 @@ struct EmptyBookView: View {
 struct EntryDetailView: View {
     let entry: DiaryEntry
     @Environment(\.dismiss) var dismiss
+    @Environment(\.managedObjectContext) var managedObjectContext
+    
+    @State private var showingDeleteAlert = false
+    @State private var showingShareSheet = false
+    @State private var showingEditSheet = false
+    @State private var showingSuccessFeedback = false
+    @State private var refreshTrigger = UUID()
     
     var body: some View {
         NavigationStack {
             ScrollView {
                     BookPageView(entry: entry)
                     .padding()
+                    .id(refreshTrigger) // Force refresh when this changes
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Entry Details")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-                
                 ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button(action: {}) {
-                            Label("Edit", systemImage: "pencil")
+                    HStack(spacing: 16) {
+                        // Edit button
+                        Button(action: {
+                            showingEditSheet = true
+                        }) {
+                            Image(systemName: "pencil.circle.fill")
+                                .foregroundColor(.purple)
+                                .font(.title3)
                         }
                         
-                        Button(action: {}) {
-                            Label("Share", systemImage: "square.and.arrow.up")
+                        // Share button
+                        Button(action: shareEntry) {
+                            Image(systemName: "square.and.arrow.up.circle.fill")
+                                .foregroundColor(.purple)
+                                .font(.title3)
                         }
                         
-                        Button(role: .destructive, action: {}) {
-                            Label("Delete", systemImage: "trash")
+                        // Delete button
+                        Button(action: {
+                            showingDeleteAlert = true
+                        }) {
+                            Image(systemName: "trash.circle.fill")
+                                .foregroundColor(.purple)
+                                .font(.title3)
                         }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
                     }
                 }
             }
+            .alert("Delete Entry?", isPresented: $showingDeleteAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    deleteEntry()
+                }
+            } message: {
+                Text("This action cannot be undone.")
+            }
+            .sheet(isPresented: $showingShareSheet) {
+                ShareSheet(activityItems: [createShareText()])
+            }
+            .sheet(isPresented: $showingEditSheet) {
+                EditEntryView(entry: entry)
+                    .environment(\.managedObjectContext, managedObjectContext)
+            }
+            .onChange(of: showingEditSheet) { oldValue, newValue in
+                // When edit sheet closes, refresh the view and show success feedback
+                if oldValue == true && newValue == false {
+                    // Refresh the entry display
+                    managedObjectContext.refresh(entry, mergeChanges: true)
+                    refreshTrigger = UUID()
+                    
+                    // Show success feedback after a brief delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
+                            showingSuccessFeedback = true
+                        }
+                        
+                        // Hide after 2 seconds
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                            withAnimation {
+                                showingSuccessFeedback = false
+                            }
+                        }
+                    }
+                }
+            }
+            .overlay(
+                Group {
+                    if showingSuccessFeedback {
+                        VStack {
+                            SuccessFeedbackViewTop()
+                            Spacer()
+                        }
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                }
+            )
         }
     }
+    
+    func shareEntry() {
+        showingShareSheet = true
+    }
+    
+    func createShareText() -> String {
+        var text = ""
+        
+        // Date
+        text += entry.createdAt.formatted(date: .long, time: .shortened)
+        text += "\n\n"
+        
+        // Title
+        if let title = entry.title, !title.isEmpty {
+            text += title + "\n\n"
+        }
+        
+        // Content
+        if !entry.content.isEmpty {
+            text += entry.content
+            text += "\n\n"
+        }
+        
+        // Tags
+        if let tags = entry.tagsArray, !tags.isEmpty {
+            text += tags.map { "#\($0)" }.joined(separator: " ")
+            text += "\n"
+        }
+        
+        // Location
+        if let location = entry.location, !location.isEmpty {
+            text += "📍 \(location)\n"
+        }
+        
+        text += "\n— Memora Journal"
+        
+        return text
+    }
+    
+    func deleteEntry() {
+        managedObjectContext.delete(entry)
+        
+        do {
+            try managedObjectContext.save()
+            dismiss()
+        } catch {
+            print("Failed to delete entry: \(error)")
+        }
+    }
+}
+
+// Success Feedback at Top
+struct SuccessFeedbackViewTop: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [.purple, .pink],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 44, height: 44)
+                
+                Image(systemName: "checkmark")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Entry Saved!")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Text("Successfully saved to journal")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white)
+                .shadow(color: .purple.opacity(0.2), radius: 12, x: 0, y: 4)
+        )
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+    }
+}
+
+// Share Sheet wrapper
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(
+            activityItems: activityItems,
+            applicationActivities: nil
+        )
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 struct BookPageView: View {
@@ -501,6 +768,19 @@ struct BookPageView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .cornerRadius(15)
+                        } else {
+                            // Placeholder for failed images
+                            VStack {
+                                Image(systemName: "photo.on.rectangle.angled")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.gray)
+                                Text("Image not available")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(15)
                         }
                     }
                 }
@@ -565,6 +845,7 @@ struct BookPageView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 20)
@@ -574,8 +855,23 @@ struct BookPageView: View {
     }
     
     func loadImage(from url: URL) -> UIImage? {
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        return UIImage(data: data)
+        let fileManager = FileManager.default
+        
+        // Check if file exists
+        if !fileManager.fileExists(atPath: url.path) {
+            print("❌ File doesn't exist: \(url.path)")
+            return nil
+        }
+        
+        // Try to load the data
+        guard let data = try? Data(contentsOf: url),
+              let image = UIImage(data: data) else {
+            print("❌ Failed to load image data from: \(url.path)")
+            return nil
+        }
+        
+        print("✅ Loaded image from: \(url.lastPathComponent)")
+        return image
     }
 }
 

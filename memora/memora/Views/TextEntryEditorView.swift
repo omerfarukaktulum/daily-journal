@@ -8,6 +8,7 @@
 import SwiftUI
 import CoreData
 import CoreLocation
+import MapKit
 
 struct TextEntryEditorView: View {
     @Environment(\.managedObjectContext) var managedObjectContext
@@ -26,7 +27,9 @@ struct TextEntryEditorView: View {
     @State private var newTag: String = ""
     @State private var location: String = ""
     @State private var isFetchingLocation = false
+    @State private var showingLocationSuggestions = false
     
+    @StateObject private var locationSearch = LocationSearchService()
     @State private var showingAIImprovement = false
     @State private var aiSuggestions: [String] = []
     @State private var isLoadingAI = false
@@ -129,8 +132,48 @@ struct TextEntryEditorView: View {
                             .disabled(isFetchingLocation)
                         }
                         
-                        TextField("Where are you?", text: $location)
+                        TextField("Where are you?", text: $locationSearch.searchQuery)
                             .textFieldStyle(.roundedBorder)
+                            .onChange(of: locationSearch.searchQuery) { oldValue, newValue in
+                                location = newValue
+                                showingLocationSuggestions = !newValue.isEmpty && !locationSearch.suggestions.isEmpty
+                            }
+                        
+                        // Location suggestions
+                        if showingLocationSuggestions && !locationSearch.suggestions.isEmpty {
+                            VStack(alignment: .leading, spacing: 0) {
+                                ForEach(locationSearch.suggestions.prefix(5), id: \.self) { suggestion in
+                                    Button(action: {
+                                        location = suggestion
+                                        locationSearch.searchQuery = suggestion
+                                        showingLocationSuggestions = false
+                                    }) {
+                                        HStack {
+                                            Image(systemName: "location.fill")
+                                                .font(.caption)
+                                                .foregroundColor(.gray)
+                                            
+                                            Text(suggestion)
+                                                .font(.subheadline)
+                                                .foregroundColor(.primary)
+                                                .lineLimit(1)
+                                            
+                                            Spacer()
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 10)
+                                        .background(Color(.systemGray6))
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    
+                                    if suggestion != locationSearch.suggestions.prefix(5).last {
+                                        Divider()
+                                    }
+                                }
+                            }
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+                        }
                     }
                     
                     // Tags
@@ -256,14 +299,19 @@ struct TextEntryEditorView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {
             if let locationString = locationManager.locationString {
                 location = locationString
+                locationSearch.searchQuery = locationString
             } else {
                 #if targetEnvironment(simulator)
-                location = "Set location in: Features → Location → Custom..."
+                let message = "Set location in: Features → Location → Custom..."
+                location = message
+                locationSearch.searchQuery = message
                 #else
                 location = "Unable to get location"
+                locationSearch.searchQuery = "Unable to get location"
                 #endif
             }
             isFetchingLocation = false
+            showingLocationSuggestions = false
         }
     }
     
@@ -322,10 +370,56 @@ struct TextEntryEditorView: View {
         
         do {
             try managedObjectContext.save()
+            
+            // Dismiss first, then show feedback from parent view
             dismiss()
         } catch {
             print("Failed to save entry: \(error)")
         }
+    }
+}
+
+// MARK: - Success Feedback View
+struct SuccessFeedbackView: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [.purple, .pink],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 44, height: 44)
+                
+                Image(systemName: "checkmark")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Entry Saved!")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Text("Successfully saved to journal")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white)
+                .shadow(color: .purple.opacity(0.2), radius: 12, x: 0, y: 4)
+        )
+        .padding(.horizontal, 20)
+        .padding(.top, 60) // Position near top
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }
 
