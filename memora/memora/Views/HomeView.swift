@@ -127,43 +127,40 @@ struct HomeView: View {
     
     // MARK: - Stats Overview Section
     var statsOverviewSection: some View {
-        VStack(spacing: 15) {
-            HStack(spacing: 12) {
-                StatCard(
-                    icon: "flame.fill",
-                    value: "\(calculateStreak())",
-                    label: "Day Streak",
-                    color: .orange,
-                    iconBackground: Color.orange.opacity(0.2)
-                )
-                
-                StatCard(
-                    icon: "doc.text.fill",
-                    value: "\(entries.count)",
-                    label: "Total Entries",
-                    color: .purple,
-                    iconBackground: Color.purple.opacity(0.2)
-                )
-            }
+        HStack(spacing: 20) {
+            StatItem(
+                icon: "doc.text.fill",
+                value: "\(entries.count)",
+                label: "Entries",
+                color: .purple
+            )
             
-            HStack(spacing: 12) {
-                StatCard(
-                    icon: "calendar",
-                    value: "\(thisWeekEntries.count)",
-                    label: "This Week",
-                    color: .blue,
-                    iconBackground: Color.blue.opacity(0.2)
-                )
-                
-                StatCard(
-                    icon: "sparkles",
-                    value: "\(aiImprovedCount)",
-                    label: "AI Enhanced",
-                    color: .yellow,
-                    iconBackground: Color.yellow.opacity(0.2)
-                )
-            }
+            Divider()
+                .frame(height: 40)
+            
+            StatItem(
+                icon: "flame.fill",
+                value: "\(calculateStreak())",
+                label: "Day Streak",
+                color: .orange
+            )
+            
+            Divider()
+                .frame(height: 40)
+            
+            StatItem(
+                icon: "sparkles",
+                value: "\(aiImprovedCount)",
+                label: "AI Enhanced",
+                color: .yellow
+            )
         }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white)
+                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 5)
+        )
     }
     
     // MARK: - Quick Actions Section
@@ -185,7 +182,7 @@ struct HomeView: View {
                 QuickActionButton(
                     icon: "camera.circle.fill",
                     title: "Photo",
-                    color: .blue
+                    color: .purple
                 ) {
                     selectedQuickAction = .photo
                 }
@@ -193,7 +190,7 @@ struct HomeView: View {
                 QuickActionButton(
                     icon: "mic.circle.fill",
                     title: "Voice",
-                    color: .pink
+                    color: .purple
                 ) {
                     selectedQuickAction = .voice
                 }
@@ -398,39 +395,26 @@ enum QuickActionType: Identifiable {
 
 // MARK: - Supporting Views
 
-struct StatCard: View {
+struct StatItem: View {
     let icon: String
     let value: String
     let label: String
-    let color: Color
-    let iconBackground: Color
+    var color: Color = .purple
     
     var body: some View {
-        VStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(iconBackground)
-                    .frame(width: 50, height: 50)
-                
+        VStack(spacing: 8) {
             Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundColor(color)
-            }
+                .font(.title2)
+                .foregroundColor(color)
             
             Text(value)
-                .font(.title2.bold())
+                .font(.title3.bold())
             
             Text(label)
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 15)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
-        )
     }
 }
 
