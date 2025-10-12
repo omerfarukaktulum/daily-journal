@@ -300,12 +300,16 @@ struct PhotoEntryEditorView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .font(.body)
+                    .foregroundColor(.secondary)
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         saveEntry()
                     }
+                    .font(.body.bold())
+                    .foregroundColor((loadedImages.isEmpty || content.isEmpty) ? .secondary : .purple)
                     .disabled(loadedImages.isEmpty || content.isEmpty)
                 }
             }

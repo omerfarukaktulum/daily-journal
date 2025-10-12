@@ -195,12 +195,16 @@ struct EditEntryView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .font(.body)
+                    .foregroundColor(.secondary)
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         saveChanges()
                     }
+                    .font(.body.bold())
+                    .foregroundColor(content.isEmpty ? .secondary : .purple)
                     .disabled(content.isEmpty)
                 }
             }

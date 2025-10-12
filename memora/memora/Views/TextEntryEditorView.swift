@@ -245,12 +245,16 @@ struct TextEntryEditorView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .font(.body)
+                    .foregroundColor(.secondary)
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         saveEntry()
                     }
+                    .font(.body.bold())
+                    .foregroundColor(content.isEmpty ? .secondary : .purple)
                     .disabled(content.isEmpty)
                 }
             }

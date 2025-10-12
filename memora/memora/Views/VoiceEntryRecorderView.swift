@@ -62,94 +62,96 @@ struct VoiceEntryRecorderView: View {
     }
     
     var recordingView: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Color.pink.opacity(0.1), Color.purple.opacity(0.05)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-            
-            VStack(spacing: 30) {
-                Spacer()
+            ZStack {
+                LinearGradient(
+                    colors: [Color.pink.opacity(0.1), Color.purple.opacity(0.05)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
                 
-                // Recording Animation
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [.pink, .purple],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 200, height: 200)
-                        .scaleEffect(isRecording ? 1.1 : 1.0)
-                        .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: isRecording)
+                VStack(spacing: 30) {
+                    Spacer()
                     
-                    Image(systemName: isRecording ? "waveform" : "mic.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(.white)
-                }
-                
-                // Duration
-                if isRecording {
-                    Text(formatDuration(recordingDuration))
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .foregroundColor(.primary)
-                } else {
-                    Text("Ready to Record")
-                        .font(.title2)
-                        .foregroundColor(.secondary)
-                }
-                
-                // Record Button
-                Button(action: toggleRecording) {
-                    Text(isRecording ? "Stop Recording" : "Start Recording")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(width: 200)
-                        .padding()
-                        .background(
-                            Capsule()
-                                .fill(isRecording ? Color.red : Color.pink)
-                        )
-                }
-                
-                Spacer()
-                
+                    // Recording Animation
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [.pink, .purple],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 200, height: 200)
+                            .scaleEffect(isRecording ? 1.1 : 1.0)
+                            .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: isRecording)
+                        
+                        Image(systemName: isRecording ? "waveform" : "mic.fill")
+                            .font(.system(size: 80))
+                            .foregroundColor(.white)
+                    }
+                    
+                    // Duration
+                    if isRecording {
+                        Text(formatDuration(recordingDuration))
+                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
+                    } else {
+                        Text("Ready to Record")
+                            .font(.title2)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    // Record Button
+                    Button(action: toggleRecording) {
+                        Text(isRecording ? "Stop Recording" : "Start Recording")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(width: 200)
+                            .padding()
+                            .background(
+                                Capsule()
+                                    .fill(isRecording ? Color.red : Color.pink)
+                            )
+                    }
+                    
+                    Spacer()
+                    
                 // Live Transcription Preview
                 if isRecording && !speechRecognizer.transcript.isEmpty {
-                    VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 10) {
                         Text("Live Transcription")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        
-                        ScrollView {
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                            
+                            ScrollView {
                             Text(speechRecognizer.transcript)
-                                .font(.body)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
+                                    .font(.body)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                         .frame(maxHeight: 150)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.05), radius: 5)
+                            )
+                        }
                         .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(Color.white)
-                                .shadow(color: .black.opacity(0.05), radius: 5)
-                        )
                     }
-                    .padding()
                 }
             }
-        }
-        .navigationTitle("Voice Entry")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") {
-                    stopRecording()
-                    dismiss()
+            .navigationTitle("Voice Entry")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        stopRecording()
+                        dismiss()
                 }
+                .font(.body)
+                .foregroundColor(.secondary)
             }
         }
         .onAppear {
@@ -381,15 +383,19 @@ struct VoiceEntryRecorderView: View {
                 Button("Cancel") {
                     dismiss()
                 }
-            }
-            
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    saveEntry()
+                .font(.body)
+                .foregroundColor(.secondary)
                 }
-                .disabled(transcribedText.isEmpty)
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        saveEntry()
+                    }
+                .font(.body.bold())
+                .foregroundColor(transcribedText.isEmpty ? .secondary : .purple)
+                    .disabled(transcribedText.isEmpty)
+                }
             }
-        }
         .sheet(isPresented: $showingAIImprovement) {
             AIImprovementSheet(suggestions: aiSuggestions) { selectedVersion in
                 transcribedText = selectedVersion
