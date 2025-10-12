@@ -215,8 +215,6 @@ struct BookView: View {
                 .padding(.vertical)
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("My Journal")
-            .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
@@ -347,7 +345,7 @@ struct StatFilterChip: View {
             .padding(.horizontal, 6)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.purple : Color.purple.opacity(0.15))
+                    .fill(isSelected ? Color.purple.opacity(0.7) : Color.purple.opacity(0.15))
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -383,7 +381,7 @@ struct FilterChip: View {
             .padding(.vertical, 8)
             .background(
                 Capsule()
-                    .fill(isSelected ? Color.purple : Color.purple.opacity(0.15))
+                    .fill(isSelected ? Color.purple.opacity(0.7) : Color.purple.opacity(0.15))
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -442,7 +440,7 @@ struct JournalEntryCard: View {
             // Content Preview (text only for photo entries)
             if !contentPreview.isEmpty {
                 Text(contentPreview)
-                        .font(.caption)
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                     .lineLimit(3)
             }
@@ -581,12 +579,7 @@ struct EntryDetailView: View {
                 ShareSheet(activityItems: [createShareText()])
             }
             .sheet(isPresented: $showingEditSheet) {
-                EditEntryView(entry: entry)
-                    .environment(\.managedObjectContext, managedObjectContext)
-            }
-            .onChange(of: showingEditSheet) { oldValue, newValue in
-                // When edit sheet closes, refresh the view and show success feedback
-                if oldValue == true && newValue == false {
+                EditEntryView(entry: entry, onSave: {
                     // Refresh the entry display
                     managedObjectContext.refresh(entry, mergeChanges: true)
                     refreshTrigger = UUID()
@@ -604,7 +597,8 @@ struct EntryDetailView: View {
                             }
                         }
                     }
-                }
+                })
+                .environment(\.managedObjectContext, managedObjectContext)
             }
             .overlay(
                 Group {

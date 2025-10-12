@@ -28,6 +28,7 @@ struct NewEntryView: View {
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .multilineTextAlignment(.center)
                         .padding(.top, 40)
+                        .padding(.horizontal) // Match container width
                     
                     VStack(spacing: 20) {
                         EntryTypeCard(
@@ -59,8 +60,6 @@ struct NewEntryView: View {
                     Spacer()
                 }
             }
-            .navigationTitle("New Entry")
-            .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingTextEditor) {
                 TextEntryEditorView()
             }

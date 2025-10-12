@@ -7,9 +7,11 @@
 
 import SwiftUI
 import CoreData
+import PhotosUI
 
 struct EditEntryView: View {
     let entry: DiaryEntry
+    let onSave: () -> Void // Callback when successfully saved
     @Environment(\.dismiss) var dismiss
     @Environment(\.managedObjectContext) var managedObjectContext
     
@@ -19,6 +21,10 @@ struct EditEntryView: View {
     @State private var tags: [String] = []
     @State private var newTag: String = ""
     @State private var location: String = ""
+    
+    // Photo state
+    @State private var selectedPhotos: [PhotosPickerItem] = []
+    @State private var photoURLs: [URL] = []
     
     var body: some View {
         NavigationStack {
@@ -50,6 +56,67 @@ struct EditEntryView: View {
                                 RoundedRectangle(cornerRadius: 10)
                                     .stroke(Color.purple.opacity(0.3), lineWidth: 1)
                             )
+                    }
+                    
+                    // Photos Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Photos (Optional)")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        // Photo Grid
+                        if !photoURLs.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(Array(photoURLs.enumerated()), id: \.offset) { index, url in
+                                        ZStack(alignment: .topTrailing) {
+                                            if let image = loadImage(from: url) {
+                                                Image(uiImage: image)
+                                                    .resizable()
+                                                    .scaledToFill()
+                                                    .frame(width: 100, height: 100)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                            }
+                                            
+                                            // Delete button
+                                            Button(action: {
+                                                photoURLs.remove(at: index)
+                                            }) {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .foregroundColor(.white)
+                                                    .background(Circle().fill(Color.black.opacity(0.6)))
+                                            }
+                                            .padding(4)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Photo Picker
+                        PhotosPicker(selection: $selectedPhotos, maxSelectionCount: 10, matching: .images) {
+                            HStack {
+                                Image(systemName: "photo.on.rectangle.angled")
+                                Text("Add Photos")
+                            }
+                            .font(.subheadline)
+                            .foregroundColor(.purple)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.purple.opacity(0.1))
+                            .cornerRadius(10)
+                        }
+                        .onChange(of: selectedPhotos) { oldValue, newPhotos in
+                            Task {
+                                for item in newPhotos {
+                                    if let data = try? await item.loadTransferable(type: Data.self),
+                                       let image = UIImage(data: data) {
+                                        savePhoto(image)
+                                    }
+                                }
+                                selectedPhotos = []
+                            }
+                        }
                     }
                     
                     // Mood Picker
@@ -149,6 +216,32 @@ struct EditEntryView: View {
         mood = entry.mood ?? ""
         location = entry.location ?? ""
         tags = entry.tagsArray ?? []
+        photoURLs = entry.photoURLsArray ?? []
+    }
+    
+    func loadImage(from url: URL) -> UIImage? {
+        guard let data = try? Data(contentsOf: url),
+              let image = UIImage(data: data) else {
+            return nil
+        }
+        return image
+    }
+    
+    func savePhoto(_ image: UIImage) {
+        // Create photos directory if needed
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let photosPath = documentsPath.appendingPathComponent("photos", isDirectory: true)
+        
+        try? FileManager.default.createDirectory(at: photosPath, withIntermediateDirectories: true)
+        
+        // Save image
+        let filename = UUID().uuidString + ".jpg"
+        let fileURL = photosPath.appendingPathComponent(filename)
+        
+        if let imageData = image.jpegData(compressionQuality: 0.8) {
+            try? imageData.write(to: fileURL)
+            photoURLs.append(fileURL)
+        }
     }
     
     func saveChanges() {
@@ -167,11 +260,25 @@ struct EditEntryView: View {
             entry.tags = nil
         }
         
+        // Save photos
+        if !photoURLs.isEmpty {
+            let paths = photoURLs.map { $0.path }
+            if let jsonData = try? JSONEncoder().encode(paths),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                entry.photoURLs = jsonString
+            }
+        } else {
+            entry.photoURLs = nil
+        }
+        
         do {
             try managedObjectContext.save()
             
-            // Dismiss first, then parent will show feedback
+            // Dismiss first
             dismiss()
+            
+            // Notify parent that save was successful
+            onSave()
         } catch {
             print("Failed to save changes: \(error)")
         }
