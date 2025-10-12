@@ -41,18 +41,9 @@ struct PhotoEntryEditorView: View {
     
     var body: some View {
         NavigationStack {
-            ZStack {
-                // Background gradient
-                LinearGradient(
-                    colors: [Color.pink.opacity(0.1), Color.purple.opacity(0.05)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-                
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        // Photo Source Buttons
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Photo Source Buttons
                     HStack(spacing: 15) {
                         // Take Photo Button
                         Button(action: { 
@@ -323,7 +314,6 @@ struct PhotoEntryEditorView: View {
                     loadedImages.append(image)
                     showingCamera = false
                 }
-            }
             }
         }
     }
