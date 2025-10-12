@@ -390,7 +390,11 @@ struct TextEntryEditorView: View {
         do {
             try managedObjectContext.save()
             
-            // Dismiss first, then show feedback from parent view
+            // Navigate to Journal and show this entry
+            appState.pendingEntryToShow = entry.id
+            appState.shouldNavigateToJournal = true
+            
+            // Dismiss the sheet
             dismiss()
         } catch {
             print("Failed to save entry: \(error)")

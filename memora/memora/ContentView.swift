@@ -24,6 +24,7 @@ struct ContentView: View {
 
 struct MainTabView: View {
     @Binding var selectedTab: Int
+    @EnvironmentObject var appState: AppState
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -52,6 +53,12 @@ struct MainTabView: View {
                 .tag(3)
         }
         .accentColor(.purple)
+        .onChange(of: appState.shouldNavigateToJournal) { shouldNavigate in
+            if shouldNavigate {
+                selectedTab = 2 // Switch to Journal tab
+                appState.shouldNavigateToJournal = false // Reset flag
+            }
+        }
     }
 }
 

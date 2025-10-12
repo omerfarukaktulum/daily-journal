@@ -10,6 +10,7 @@ import CoreData
 
 struct BookView: View {
     @Environment(\.managedObjectContext) var managedObjectContext
+    @EnvironmentObject var appState: AppState
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \DiaryEntry.createdAt, ascending: false)],
         animation: .default
@@ -236,6 +237,17 @@ struct BookView: View {
                     // Refresh all entries to pick up changes
                     if let entry = selectedEntry {
                         managedObjectContext.refresh(entry, mergeChanges: true)
+                    }
+                }
+            }
+            .onChange(of: appState.pendingEntryToShow) { entryID in
+                // Navigate to and show the newly saved entry
+                if let entryID = entryID,
+                   let entry = entries.first(where: { $0.id == entryID }) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        selectedEntry = entry
+                        showingEntryDetail = true
+                        appState.pendingEntryToShow = nil // Reset
                     }
                 }
             }

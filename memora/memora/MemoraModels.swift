@@ -42,6 +42,10 @@ class AppState: ObservableObject {
         }
     }
     
+    // Navigation to newly saved entry
+    @Published var pendingEntryToShow: UUID? = nil
+    @Published var shouldNavigateToJournal: Bool = false
+    
     init() {
         self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
         let modeString = UserDefaults.standard.string(forKey: "journalMode") ?? "personal"
