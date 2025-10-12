@@ -41,9 +41,18 @@ struct TextEntryEditorView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Title
+            ZStack {
+                // Background gradient
+                LinearGradient(
+                    colors: [Color.pink.opacity(0.1), Color.purple.opacity(0.05)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Title
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Title (Optional)")
                             .font(.subheadline)
@@ -268,6 +277,7 @@ struct TextEntryEditorView: View {
                 }
             } message: {
                 Text("You've used all 5 free AI improvements for today. Upgrade to Premium for unlimited AI features!")
+            }
             }
         }
     }

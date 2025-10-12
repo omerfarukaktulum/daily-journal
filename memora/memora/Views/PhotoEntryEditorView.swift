@@ -41,9 +41,18 @@ struct PhotoEntryEditorView: View {
     
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Photo Source Buttons
+            ZStack {
+                // Background gradient
+                LinearGradient(
+                    colors: [Color.pink.opacity(0.1), Color.purple.opacity(0.05)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        // Photo Source Buttons
                     HStack(spacing: 15) {
                         // Take Photo Button
                         Button(action: { 
@@ -62,12 +71,6 @@ struct PhotoEntryEditorView: View {
                                 Text("Take Photo")
                                     .font(.subheadline)
                                     .foregroundColor(.purple)
-                                
-                                #if targetEnvironment(simulator)
-                                Text("(Device only)")
-                                    .font(.caption2)
-                                    .foregroundColor(.secondary)
-                                #endif
                             }
                             .frame(maxWidth: .infinity)
                             .frame(height: 120)
@@ -134,18 +137,47 @@ struct PhotoEntryEditorView: View {
                         }
                     }
                     
-                    // Metadata Fields
-                    if appState.journalMode == .child {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Who's in the photo?")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                            
-                            TextField("e.g., Melike, Uğur, Yağız", text: $characterNames)
-                                .textFieldStyle(.roundedBorder)
+                    // AI Generate Caption Button
+                    if !loadedImages.isEmpty && content.isEmpty {
+                        Button(action: generateCaption) {
+                            HStack {
+                                Image(systemName: "sparkles")
+                                Text(isGeneratingCaption ? "Generating..." : "Generate Caption with AI")
+                                    .fontWeight(.semibold)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(
+                                LinearGradient(
+                                    colors: [.blue, .purple],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
                         }
+                        .disabled(isGeneratingCaption)
                     }
                     
+                    // Caption/Content
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Caption")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        TextEditor(text: $content)
+                            .frame(minHeight: 150)
+                            .padding(8)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                            )
+                    }
+                    
+                    // Location Field
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Location (Optional)")
@@ -207,46 +239,6 @@ struct PhotoEntryEditorView: View {
                             .background(Color(.systemGray6))
                             .cornerRadius(8)
                         }
-                    }
-                    
-                    // AI Generate Caption Button
-                    if !loadedImages.isEmpty && content.isEmpty {
-                        Button(action: generateCaption) {
-                            HStack {
-                                Image(systemName: "sparkles")
-                                Text(isGeneratingCaption ? "Generating..." : "Generate Caption with AI")
-                                    .fontWeight(.semibold)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                LinearGradient(
-                                    colors: [.blue, .purple],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                        }
-                        .disabled(isGeneratingCaption)
-                    }
-                    
-                    // Caption/Content
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Caption")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        TextEditor(text: $content)
-                            .frame(minHeight: 150)
-                            .padding(8)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.purple.opacity(0.3), lineWidth: 1)
-                            )
                     }
                     
                     // Tags
@@ -331,6 +323,7 @@ struct PhotoEntryEditorView: View {
                     loadedImages.append(image)
                     showingCamera = false
                 }
+            }
             }
         }
     }
