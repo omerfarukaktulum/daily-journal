@@ -30,234 +30,159 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
-                    // Premium Status
-                    VStack(spacing: 12) {
-                        if appState.isPremiumUser {
-                            HStack {
-                                Image(systemName: "crown.fill")
-                                    .foregroundColor(.yellow)
-                                Text("Premium Member")
-                                    .fontWeight(.semibold)
-                                Spacer()
-                            }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 15)
-                                    .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            )
-                        } else {
-                            Button(action: { showingPremiumSheet = true }) {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        Text("Upgrade to Premium")
-                                            .font(.headline)
-                                            .foregroundColor(.primary)
-                                        
-                                        Text("Unlimited AI features & more")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: "crown.fill")
-                                        .foregroundColor(.yellow)
-                                }
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 15)
-                                        .fill(Color.white)
-                                        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            HStack {
-                                Text("AI uses today:")
-                                Spacer()
-                                Text("\(appState.aiUsageCount) / 5")
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 15)
-                                    .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
-                            )
-                        }
+                VStack(spacing: 24) {
+                    // Premium Banner
+                    if appState.isPremiumUser {
+                        premiumBanner
+                    } else {
+                        upgradeBanner
                     }
-                    .padding(.horizontal)
                     
-                    // Notifications
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Notifications")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
+                    // Preferences Section
+                    VStack(spacing: 0) {
+                        SettingsRow(
+                            icon: "bell.fill",
+                            iconColor: .purple,
+                            title: "Daily Reminders",
+                            showToggle: true,
+                            isToggled: $notificationsEnabled
+                        )
+                        .onChange(of: notificationsEnabled) { _, newValue in
+                            UserDefaults.standard.set(newValue, forKey: "notifications_enabled")
+                            if newValue {
+                                scheduleNotification()
+                            }
+                        }
                         
-                        VStack(spacing: 0) {
-                            Toggle("Daily Reminders", isOn: $notificationsEnabled)
-                                .padding()
-                                .onChange(of: notificationsEnabled) { _, newValue in
-                                    UserDefaults.standard.set(newValue, forKey: "notifications_enabled")
-                                    if newValue {
-                                        scheduleNotification()
-                                    }
-                                }
+                        if notificationsEnabled {
+                            Divider()
+                                .padding(.leading, 56)
                             
-                            if notificationsEnabled {
-                                Divider()
-                                    .padding(.leading)
+                            HStack {
+                                Image(systemName: "clock.fill")
+                                    .font(.title3)
+                                    .foregroundColor(.blue)
+                                    .frame(width: 32, height: 32)
                                 
                                 DatePicker(
                                     "Reminder Time",
                                     selection: $notificationTime,
                                     displayedComponents: .hourAndMinute
                                 )
-                                .padding()
-                                .onChange(of: notificationTime) { _, newValue in
-                                    UserDefaults.standard.set(newValue, forKey: "notification_time")
-                                    scheduleNotification()
-                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .onChange(of: notificationTime) { _, newValue in
+                                UserDefaults.standard.set(newValue, forKey: "notification_time")
+                                scheduleNotification()
                             }
                         }
-                        .background(
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(Color.white)
-                                .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
-                        )
-                        .padding(.horizontal)
-                    }
-                    
-                    // Privacy
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Privacy")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
                         
-                        VStack(spacing: 0) {
-                            Toggle("Privacy Mode", isOn: $privacyMode)
-                                .padding()
-                            
-                            if privacyMode {
-                                Divider()
-                                    .padding(.leading)
-                                
-                                Text("Keep everything on device. AI features will be disabled.")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .padding()
-                            }
-                            
-                            Divider()
-                                .padding(.leading)
-                            
-                            NavigationLink(destination: CloudSyncSettingsView()) {
-                                HStack {
-                                    Text("iCloud Sync")
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding()
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(Color.white)
-                                .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
-                        )
-                        .padding(.horizontal)
-                    }
-                    
-                    // About
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("About")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
+                        Divider()
+                            .padding(.leading, 56)
                         
-                        VStack(spacing: 0) {
-                            NavigationLink(destination: HelpView()) {
-                                HStack {
-                                    Text("Help & Support")
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding()
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            Divider()
-                                .padding(.leading)
-                            
-                            HStack {
-                                Text("Version")
-                                Spacer()
-                                Text("1.0.0")
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding()
-                        }
-                        .background(
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(Color.white)
-                                .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+                        SettingsRow(
+                            icon: "lock.shield.fill",
+                            iconColor: .green,
+                            title: "Privacy Mode",
+                            subtitle: privacyMode ? "AI features disabled" : nil,
+                            showToggle: true,
+                            isToggled: $privacyMode
                         )
-                        .padding(.horizontal)
                     }
+                    .background(
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(Color.white)
+                            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+                    )
+                    .padding(.horizontal)
                     
-                    // Developer
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Developer")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
-                        
-                        VStack(spacing: 0) {
-                            Button(action: {
-                                appState.hasCompletedOnboarding = false
-                            }) {
-                                HStack {
-                                    Text("Reset Onboarding")
-                                        .foregroundColor(.primary)
-                                    Spacer()
-                                }
-                                .padding()
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            Divider()
-                                .padding(.leading)
-                            
-                            Button(role: .destructive, action: {
-                                // Implement data clearing
-                            }) {
-                                HStack {
-                                    Text("Clear All Data")
-                                        .foregroundColor(.red)
-                                    Spacer()
-                                }
-                                .padding()
-                            }
-                            .buttonStyle(PlainButtonStyle())
+                    // Data & Sync Section
+                    VStack(spacing: 0) {
+                        NavigationLink(destination: CloudSyncSettingsView()) {
+                            SettingsRow(
+                                icon: "icloud.fill",
+                                iconColor: .blue,
+                                title: "iCloud Sync",
+                                subtitle: "Sync across devices",
+                                showChevron: true
+                            )
                         }
-                        .background(
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(Color.white)
-                                .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
-                        )
-                        .padding(.horizontal)
+                        .buttonStyle(PlainButtonStyle())
                     }
+                    .background(
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(Color.white)
+                            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+                    )
+                    .padding(.horizontal)
+                    
+                    // Support & About Section
+                    VStack(spacing: 0) {
+                        NavigationLink(destination: HelpView()) {
+                            SettingsRow(
+                                icon: "questionmark.circle.fill",
+                                iconColor: .orange,
+                                title: "Help & Support",
+                                subtitle: "Guides and FAQs",
+                                showChevron: true
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        Divider()
+                            .padding(.leading, 56)
+                        
+                        SettingsRow(
+                            icon: "info.circle.fill",
+                            iconColor: .gray,
+                            title: "Version",
+                            value: "1.0.0"
+                        )
+                    }
+                    .background(
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(Color.white)
+                            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+                    )
+                    .padding(.horizontal)
+                    
+                    // Developer Section
+                    VStack(spacing: 0) {
+                        Button(action: {
+                            appState.hasCompletedOnboarding = false
+                        }) {
+                            SettingsRow(
+                                icon: "arrow.counterclockwise.circle.fill",
+                                iconColor: .purple,
+                                title: "Reset Onboarding"
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        Divider()
+                            .padding(.leading, 56)
+                        
+                        Button(action: {
+                            // Implement data clearing
+                        }) {
+                            SettingsRow(
+                                icon: "trash.circle.fill",
+                                iconColor: .red,
+                                title: "Clear All Data",
+                                titleColor: .red
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .background(
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(Color.white)
+                            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+                    )
+                    .padding(.horizontal)
                 }
-                .padding(.vertical)
+                .padding(.vertical, 24)
             }
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Settings")
@@ -265,6 +190,152 @@ struct SettingsView: View {
                 PremiumUpgradeView()
             }
         }
+    }
+    
+    // MARK: - Premium Banner
+    var premiumBanner: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.yellow.opacity(0.3), Color.orange.opacity(0.3)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 56, height: 56)
+                
+                Image(systemName: "crown.fill")
+                    .font(.title2)
+                    .foregroundColor(.yellow)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Premium Member")
+                    .font(.headline)
+                
+                Text("Thank you for your support!")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 15)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.yellow.opacity(0.1), Color.orange.opacity(0.05)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 15)
+                .strokeBorder(Color.yellow.opacity(0.3), lineWidth: 1)
+        )
+        .padding(.horizontal)
+    }
+    
+    // MARK: - Upgrade Banner
+    var upgradeBanner: some View {
+        Button(action: { showingPremiumSheet = true }) {
+            VStack(spacing: 16) {
+                HStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.purple.opacity(0.2), Color.pink.opacity(0.2)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 56, height: 56)
+                        
+                        Image(systemName: "crown.fill")
+                            .font(.title2)
+                            .foregroundColor(.yellow)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Upgrade to Premium")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Text("Unlimited AI • Advanced features")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "arrow.right.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.purple)
+                }
+                
+                // AI Usage Progress
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        HStack(spacing: 4) {
+                            Image(systemName: "sparkles")
+                                .font(.caption2)
+                            Text("AI uses today")
+                                .font(.caption)
+                        }
+                        .foregroundColor(.secondary)
+                        
+                        Spacer()
+                        
+                        Text("\(appState.aiUsageCount) / 5")
+                            .font(.caption.bold())
+                            .foregroundColor(.purple)
+                    }
+                    
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(height: 6)
+                            
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.purple, Color.pink],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: geometry.size.width * (CGFloat(appState.aiUsageCount) / 5.0), height: 6)
+                        }
+                    }
+                    .frame(height: 6)
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 15)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 15)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [Color.purple.opacity(0.3), Color.pink.opacity(0.3)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding(.horizontal)
     }
     
     func scheduleNotification() {
@@ -999,6 +1070,83 @@ struct PricingCard: View {
                         .fill(Color.white)
                 )
         )
+    }
+}
+
+// MARK: - Settings Row Component
+struct SettingsRow: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    var titleColor: Color = .primary
+    var subtitle: String? = nil
+    var value: String? = nil
+    var showToggle: Bool = false
+    @Binding var isToggled: Bool
+    var showChevron: Bool = false
+    
+    init(
+        icon: String,
+        iconColor: Color,
+        title: String,
+        titleColor: Color = .primary,
+        subtitle: String? = nil,
+        value: String? = nil,
+        showToggle: Bool = false,
+        isToggled: Binding<Bool> = .constant(false),
+        showChevron: Bool = false
+    ) {
+        self.icon = icon
+        self.iconColor = iconColor
+        self.title = title
+        self.titleColor = titleColor
+        self.subtitle = subtitle
+        self.value = value
+        self.showToggle = showToggle
+        self._isToggled = isToggled
+        self.showChevron = showChevron
+    }
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Icon
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundColor(iconColor)
+                .frame(width: 32, height: 32)
+            
+            // Title and Subtitle
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body)
+                    .foregroundColor(titleColor)
+                
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+            
+            // Right Side Content
+            if showToggle {
+                Toggle("", isOn: $isToggled)
+                    .labelsHidden()
+            } else if let value = value {
+                Text(value)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            } else if showChevron {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
     }
 }
 
