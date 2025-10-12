@@ -324,8 +324,10 @@ struct PhotoEntryEditorView: View {
             }
             .sheet(isPresented: $showingCamera) {
                 CameraView { image in
-                    loadedImages.append(image)
-                    showingCamera = false
+                    DispatchQueue.main.async {
+                        loadedImages.append(image)
+                        showingCamera = false
+                    }
                 }
             }
         }
