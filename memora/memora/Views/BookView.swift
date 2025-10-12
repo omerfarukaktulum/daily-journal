@@ -123,12 +123,8 @@ struct BookView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Stats Overview - Interactive Filters (Grid Layout)
+                    // Tag Filters (2-line limit, no locations)
                     if !entries.isEmpty {
-                        statsOverviewGrid
-                            .padding(.horizontal)
-                        
-                        // Tag Filters (2-line limit, no locations)
                         if !uniqueTags.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
                                 FlowLayout(spacing: 10) {
@@ -229,18 +225,6 @@ struct BookView: View {
                 .padding(.vertical)
             }
             .background(Color(.systemGroupedBackground))
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button(action: {}) {
-                            Label("Export as PDF", systemImage: "doc.fill")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .foregroundColor(.purple)
-                    }
-                }
-            }
             .sheet(isPresented: $showingEntryDetail) {
                 if let entry = selectedEntry {
                     EntryDetailView(entry: entry)
