@@ -182,7 +182,7 @@ struct HomeView: View {
                 QuickActionButton(
                     icon: "camera.circle.fill",
                     title: "Photo",
-                    color: .blue
+                    color: .cyan
                 ) {
                     selectedQuickAction = .photo
                 }
