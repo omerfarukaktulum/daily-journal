@@ -43,7 +43,7 @@ struct NewEntryView: View {
                             icon: "camera.fill",
                             title: "Photo",
                             description: "Capture a moment with images",
-                            color: .blue,
+                            color: .purple,
                             action: { showingPhotoEditor = true }
                         )
                         
@@ -51,7 +51,7 @@ struct NewEntryView: View {
                             icon: "mic.fill",
                             title: "Voice",
                             description: "Record your thoughts",
-                            color: .pink,
+                            color: .purple,
                             action: { showingVoiceRecorder = true }
                         )
                     }
