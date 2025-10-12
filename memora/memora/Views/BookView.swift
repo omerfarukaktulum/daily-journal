@@ -835,6 +835,7 @@ struct PhotoCarousel: View {
     @Binding var currentIndex: Int
     @State private var dragOffset: CGFloat = 0
     @State private var isDragging = false
+    @State private var showingFullScreen = false
     
     var body: some View {
         VStack(spacing: 12) {
@@ -845,9 +846,15 @@ struct PhotoCarousel: View {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 300)
                         .clipShape(RoundedRectangle(cornerRadius: 15))
                         .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
                         .offset(x: dragOffset)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showingFullScreen = true
+                        }
                         .gesture(
                             DragGesture()
                                 .onChanged { gesture in
@@ -892,6 +899,9 @@ struct PhotoCarousel: View {
             }
             .frame(height: 300)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: currentIndex)
+            .fullScreenCover(isPresented: $showingFullScreen) {
+                FullScreenPhotoViewer(photoURLs: photoURLs, currentIndex: $currentIndex)
+            }
             
             // Page Indicators & Counter (only show if multiple photos)
             if photoURLs.count > 1 {
@@ -929,6 +939,158 @@ struct PhotoCarousel: View {
                         .padding(.vertical, 4)
                         .background(Capsule().fill(Color.purple.opacity(0.1)))
                 }
+            }
+        }
+    }
+    
+    func loadImage(from url: URL) -> UIImage? {
+        let fileManager = FileManager.default
+        
+        if !fileManager.fileExists(atPath: url.path) {
+            return nil
+        }
+        
+        guard let data = try? Data(contentsOf: url),
+              let image = UIImage(data: data) else {
+            return nil
+        }
+        
+        return image
+    }
+}
+
+// MARK: - Full Screen Photo Viewer
+struct FullScreenPhotoViewer: View {
+    let photoURLs: [URL]
+    @Binding var currentIndex: Int
+    @Environment(\.dismiss) var dismiss
+    @State private var dragOffset: CGFloat = 0
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    
+    var body: some View {
+        ZStack {
+            Color.black
+                .ignoresSafeArea()
+            
+            VStack {
+                // Top toolbar
+                HStack {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .padding()
+                    }
+                    
+                    Spacer()
+                    
+                    if photoURLs.count > 1 {
+                        Text("\(currentIndex + 1) / \(photoURLs.count)")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Capsule().fill(Color.white.opacity(0.2)))
+                            .padding()
+                    }
+                }
+                
+                Spacer()
+                
+                // Photo with zoom and swipe
+                if let image = loadImage(from: photoURLs[currentIndex]) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .scaleEffect(scale)
+                        .offset(x: dragOffset)
+                        .gesture(
+                            MagnificationGesture()
+                                .onChanged { value in
+                                    scale = lastScale * value
+                                }
+                                .onEnded { _ in
+                                    lastScale = scale
+                                    // Reset if zoomed out too much
+                                    if scale < 1.0 {
+                                        withAnimation {
+                                            scale = 1.0
+                                            lastScale = 1.0
+                                        }
+                                    }
+                                    // Limit max zoom
+                                    if scale > 4.0 {
+                                        withAnimation {
+                                            scale = 4.0
+                                            lastScale = 4.0
+                                        }
+                                    }
+                                }
+                        )
+                        .gesture(
+                            DragGesture()
+                                .onChanged { gesture in
+                                    // Only allow swipe if not zoomed
+                                    if scale == 1.0 && photoURLs.count > 1 {
+                                        dragOffset = gesture.translation.width
+                                    }
+                                }
+                                .onEnded { gesture in
+                                    if scale == 1.0 && photoURLs.count > 1 {
+                                        let threshold: CGFloat = 100
+                                        
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                            if gesture.translation.width < -threshold && currentIndex < photoURLs.count - 1 {
+                                                currentIndex += 1
+                                            } else if gesture.translation.width > threshold && currentIndex > 0 {
+                                                currentIndex -= 1
+                                            }
+                                            dragOffset = 0
+                                        }
+                                    }
+                                }
+                        )
+                        .onTapGesture(count: 2) {
+                            // Double tap to zoom
+                            withAnimation {
+                                if scale == 1.0 {
+                                    scale = 2.5
+                                    lastScale = 2.5
+                                } else {
+                                    scale = 1.0
+                                    lastScale = 1.0
+                                }
+                            }
+                        }
+                }
+                
+                Spacer()
+                
+                // Bottom hint
+                if scale == 1.0 {
+                    VStack(spacing: 8) {
+                        if photoURLs.count > 1 {
+                            Text("Swipe to navigate • Double tap to zoom")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                        } else {
+                            Text("Double tap to zoom • Pinch to resize")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                    }
+                    .padding()
+                }
+            }
+        }
+        .statusBar(hidden: true)
+        .onChange(of: currentIndex) { _ in
+            // Reset zoom when changing photos
+            withAnimation {
+                scale = 1.0
+                lastScale = 1.0
+                dragOffset = 0
             }
         }
     }

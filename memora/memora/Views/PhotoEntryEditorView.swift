@@ -293,6 +293,7 @@ struct PhotoEntryEditorView: View {
                 }
                 .padding()
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Photo Entry")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -311,6 +312,14 @@ struct PhotoEntryEditorView: View {
                     .font(.body.bold())
                     .foregroundColor((loadedImages.isEmpty || content.isEmpty) ? .secondary : .purple)
                     .disabled(loadedImages.isEmpty || content.isEmpty)
+                }
+                
+                ToolbarItem(placement: .keyboard) {
+                    Button("Done") {
+                        hideKeyboard()
+                    }
+                    .font(.body.bold())
+                    .foregroundColor(.purple)
                 }
             }
             .sheet(isPresented: $showingCamera) {

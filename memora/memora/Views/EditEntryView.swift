@@ -188,6 +188,7 @@ struct EditEntryView: View {
                 }
                 .padding()
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Edit Entry")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -206,6 +207,14 @@ struct EditEntryView: View {
                     .font(.body.bold())
                     .foregroundColor(content.isEmpty ? .secondary : .purple)
                     .disabled(content.isEmpty)
+                }
+                
+                ToolbarItem(placement: .keyboard) {
+                    Button("Done") {
+                        hideKeyboard()
+                    }
+                    .font(.body.bold())
+                    .foregroundColor(.purple)
                 }
             }
             .onAppear {

@@ -238,6 +238,10 @@ struct TextEntryEditorView: View {
                 }
                 .padding()
             }
+            .scrollDismissesKeyboard(.interactively)
+            .onTapGesture {
+                hideKeyboard()
+            }
             .navigationTitle("New Entry")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -256,6 +260,14 @@ struct TextEntryEditorView: View {
                     .font(.body.bold())
                     .foregroundColor(content.isEmpty ? .secondary : .purple)
                     .disabled(content.isEmpty)
+                }
+                
+                ToolbarItem(placement: .keyboard) {
+                    Button("Done") {
+                        hideKeyboard()
+                    }
+                    .font(.body.bold())
+                    .foregroundColor(.purple)
                 }
             }
             .sheet(isPresented: $showingAIImprovement) {
@@ -591,6 +603,18 @@ struct AIImprovementSheet: View {
                 }
             }
         }
+    }
+    
+    // Helper to dismiss keyboard
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
+// MARK: - Extension for keyboard dismissal
+extension View {
+    func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
 

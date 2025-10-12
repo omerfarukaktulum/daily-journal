@@ -376,6 +376,7 @@ struct VoiceEntryRecorderView: View {
             }
             .padding()
         }
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Edit Voice Entry")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -395,6 +396,14 @@ struct VoiceEntryRecorderView: View {
                 .foregroundColor(transcribedText.isEmpty ? .secondary : .purple)
                     .disabled(transcribedText.isEmpty)
                 }
+            
+            ToolbarItem(placement: .keyboard) {
+                Button("Done") {
+                    hideKeyboard()
+                }
+                .font(.body.bold())
+                .foregroundColor(.purple)
+            }
             }
         .sheet(isPresented: $showingAIImprovement) {
             AIImprovementSheet(suggestions: aiSuggestions) { selectedVersion in
