@@ -82,7 +82,7 @@ struct PhotoEntryEditorView: View {
                         // Choose from Library Button
                         PhotosPicker(
                             selection: $selectedPhotos,
-                            maxSelectionCount: 5,
+                            maxSelectionCount: 10,
                             matching: .images
                         ) {
                             VStack(spacing: 10) {

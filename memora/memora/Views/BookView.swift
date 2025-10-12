@@ -28,7 +28,16 @@ struct BookView: View {
         
         // Filter by entry type first
         if let entryType = selectedEntryType {
-            result = result.filter { $0.entryType == entryType }
+            if entryType == "photo" {
+                // For photo filter, show any entry that has photos
+                result = result.filter { entry in
+                    guard let photoURLs = entry.photoURLsArray else { return false }
+                    return !photoURLs.isEmpty
+                }
+            } else {
+                // For other types, filter by entryType
+                result = result.filter { $0.entryType == entryType }
+            }
         }
         
         // Then filter by tags only (AND logic, no locations)
@@ -100,7 +109,12 @@ struct BookView: View {
     
     // Computed properties for entry counts (helps compiler)
     var totalEntriesCount: Int { entries.count }
-    var photoEntriesCount: Int { entries.filter { $0.entryType == "photo" }.count }
+    var photoEntriesCount: Int { 
+        entries.filter { entry in
+            guard let photoURLs = entry.photoURLsArray else { return false }
+            return !photoURLs.isEmpty
+        }.count
+    }
     var voiceEntriesCount: Int { entries.filter { $0.entryType == "voice" }.count }
     var textEntriesCount: Int { entries.filter { $0.entryType == "text" }.count }
     var aiImprovedCount: Int { entries.filter { $0.aiImproved }.count }
@@ -724,6 +738,7 @@ struct ShareSheet: UIViewControllerRepresentable {
 
 struct BookPageView: View {
     let entry: DiaryEntry
+    @State private var currentPhotoIndex = 0
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -738,33 +753,9 @@ struct BookPageView: View {
                     .foregroundColor(.secondary)
             }
             
-            // Photos
+            // Photos Carousel
             if let photoURLs = entry.photoURLsArray, !photoURLs.isEmpty {
-                TabView {
-                    ForEach(photoURLs, id: \.self) { url in
-                        if let image = loadImage(from: url) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFit()
-                                .cornerRadius(15)
-                        } else {
-                            // Placeholder for failed images
-                            VStack {
-                                Image(systemName: "photo.on.rectangle.angled")
-                                    .font(.system(size: 60))
-                                    .foregroundColor(.gray)
-                                Text("Image not available")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(15)
-                        }
-                    }
-                }
-                .frame(height: 300)
-                .tabViewStyle(.page)
+                PhotoCarousel(photoURLs: photoURLs, currentIndex: $currentPhotoIndex)
             }
             
             // Title
@@ -850,6 +841,126 @@ struct BookPageView: View {
         }
         
         print("✅ Loaded image from: \(url.lastPathComponent)")
+        return image
+    }
+}
+
+// MARK: - Photo Carousel Component
+struct PhotoCarousel: View {
+    let photoURLs: [URL]
+    @Binding var currentIndex: Int
+    @State private var dragOffset: CGFloat = 0
+    @State private var isDragging = false
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // Main Photo Display with Swipe Gesture
+            ZStack {
+                // Current Photo
+                if let image = loadImage(from: photoURLs[currentIndex]) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                        .offset(x: dragOffset)
+                        .gesture(
+                            DragGesture()
+                                .onChanged { gesture in
+                                    if photoURLs.count > 1 {
+                                        isDragging = true
+                                        dragOffset = gesture.translation.width
+                                    }
+                                }
+                                .onEnded { gesture in
+                                    if photoURLs.count > 1 {
+                                        let threshold: CGFloat = 50
+                                        
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                            if gesture.translation.width < -threshold && currentIndex < photoURLs.count - 1 {
+                                                // Swipe left -> next photo
+                                                currentIndex += 1
+                                            } else if gesture.translation.width > threshold && currentIndex > 0 {
+                                                // Swipe right -> previous photo
+                                                currentIndex -= 1
+                                            }
+                                            dragOffset = 0
+                                            isDragging = false
+                                        }
+                                    }
+                                }
+                        )
+                } else {
+                    // Placeholder
+                    VStack(spacing: 12) {
+                        Image(systemName: "photo.on.rectangle.angled")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray)
+                        Text("Image not available")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 300)
+                    .background(Color(.systemGray6))
+                    .clipShape(RoundedRectangle(cornerRadius: 15))
+                }
+            }
+            .frame(height: 300)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: currentIndex)
+            
+            // Page Indicators & Counter (only show if multiple photos)
+            if photoURLs.count > 1 {
+                HStack(spacing: 12) {
+                    // Swipe hint (show briefly)
+                    if currentIndex == 0 && !isDragging {
+                        HStack(spacing: 4) {
+                            Image(systemName: "hand.draw")
+                                .font(.caption2)
+                            Text("Swipe to navigate")
+                                .font(.caption2)
+                        }
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(Color.gray.opacity(0.1)))
+                        .transition(.opacity)
+                    }
+                    
+                    // Dot Indicators
+                    HStack(spacing: 6) {
+                        ForEach(0..<photoURLs.count, id: \.self) { index in
+                            Circle()
+                                .fill(currentIndex == index ? Color.purple : Color.gray.opacity(0.4))
+                                .frame(width: currentIndex == index ? 8 : 6, height: currentIndex == index ? 8 : 6)
+                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: currentIndex)
+                        }
+                    }
+                    
+                    // Photo Counter
+                    Text("\(currentIndex + 1) / \(photoURLs.count)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(Color.purple.opacity(0.1)))
+                }
+            }
+        }
+    }
+    
+    func loadImage(from url: URL) -> UIImage? {
+        let fileManager = FileManager.default
+        
+        if !fileManager.fileExists(atPath: url.path) {
+            return nil
+        }
+        
+        guard let data = try? Data(contentsOf: url),
+              let image = UIImage(data: data) else {
+            return nil
+        }
+        
         return image
     }
 }
