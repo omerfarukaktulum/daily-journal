@@ -230,9 +230,9 @@ struct BookView: View {
                     EntryDetailView(entry: entry)
                 }
             }
-            .onChange(of: showingEntryDetail) { oldValue, newValue in
+            .onChange(of: showingEntryDetail) { newValue in
                 // When sheet closes, refresh the entries to show any edits
-                if oldValue == true && newValue == false {
+                if !newValue {
                     // Refresh all entries to pick up changes
                     if let entry = selectedEntry {
                         managedObjectContext.refresh(entry, mergeChanges: true)

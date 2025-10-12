@@ -273,7 +273,7 @@ struct VoiceEntryRecorderView: View {
                     
                     TextField("Where are you?", text: $locationSearch.searchQuery)
                         .textFieldStyle(.roundedBorder)
-                        .onChange(of: locationSearch.searchQuery) { oldValue, newValue in
+                        .onChange(of: locationSearch.searchQuery) { newValue in
                             location = newValue
                             showingLocationSuggestions = !newValue.isEmpty && !locationSearch.suggestions.isEmpty
                         }

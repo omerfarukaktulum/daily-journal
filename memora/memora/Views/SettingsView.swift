@@ -47,7 +47,7 @@ struct SettingsView: View {
                             showToggle: true,
                             isToggled: $notificationsEnabled
                         )
-                        .onChange(of: notificationsEnabled) { _, newValue in
+                        .onChange(of: notificationsEnabled) { newValue in
                             UserDefaults.standard.set(newValue, forKey: "notifications_enabled")
                             if newValue {
                                 scheduleNotification()
@@ -72,7 +72,7 @@ struct SettingsView: View {
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
-                            .onChange(of: notificationTime) { _, newValue in
+                            .onChange(of: notificationTime) { newValue in
                                 UserDefaults.standard.set(newValue, forKey: "notification_time")
                                 scheduleNotification()
                             }

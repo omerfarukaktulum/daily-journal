@@ -106,7 +106,7 @@ struct EditEntryView: View {
                             .background(Color.purple.opacity(0.1))
                             .cornerRadius(10)
                         }
-                        .onChange(of: selectedPhotos) { oldValue, newPhotos in
+                        .onChange(of: selectedPhotos) { newPhotos in
                             Task {
                                 for item in newPhotos {
                                     if let data = try? await item.loadTransferable(type: Data.self),
