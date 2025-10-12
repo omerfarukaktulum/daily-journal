@@ -29,111 +29,237 @@ struct SettingsView: View {
     
     var body: some View {
         NavigationStack {
-            List {
-                // Premium Status
-                Section {
-                    if appState.isPremiumUser {
-                        HStack {
-                            Image(systemName: "crown.fill")
-                                .foregroundColor(.yellow)
-                            Text("Premium Member")
-                                .fontWeight(.semibold)
-                            Spacer()
-                        }
-                    } else {
-                        Button(action: { showingPremiumSheet = true }) {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Premium Status
+                    VStack(spacing: 12) {
+                        if appState.isPremiumUser {
                             HStack {
-                                VStack(alignment: .leading, spacing: 5) {
-                                    Text("Upgrade to Premium")
-                                        .font(.headline)
-                                        .foregroundColor(.primary)
+                                Image(systemName: "crown.fill")
+                                    .foregroundColor(.yellow)
+                                Text("Premium Member")
+                                    .fontWeight(.semibold)
+                                Spacer()
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+                            )
+                        } else {
+                            Button(action: { showingPremiumSheet = true }) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        Text("Upgrade to Premium")
+                                            .font(.headline)
+                                            .foregroundColor(.primary)
+                                        
+                                        Text("Unlimited AI features & more")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
                                     
-                                    Text("Unlimited AI features & more")
+                                    Spacer()
+                                    
+                                    Image(systemName: "crown.fill")
+                                        .foregroundColor(.yellow)
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 15)
+                                        .fill(Color.white)
+                                        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            HStack {
+                                Text("AI uses today:")
+                                Spacer()
+                                Text("\(appState.aiUsageCount) / 5")
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+                            )
+                        }
+                    }
+                    .padding(.horizontal)
+                    
+                    // Notifications
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Notifications")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                        
+                        VStack(spacing: 0) {
+                            Toggle("Daily Reminders", isOn: $notificationsEnabled)
+                                .padding()
+                                .onChange(of: notificationsEnabled) { _, newValue in
+                                    UserDefaults.standard.set(newValue, forKey: "notifications_enabled")
+                                    if newValue {
+                                        scheduleNotification()
+                                    }
+                                }
+                            
+                            if notificationsEnabled {
+                                Divider()
+                                    .padding(.leading)
+                                
+                                DatePicker(
+                                    "Reminder Time",
+                                    selection: $notificationTime,
+                                    displayedComponents: .hourAndMinute
+                                )
+                                .padding()
+                                .onChange(of: notificationTime) { _, newValue in
+                                    UserDefaults.standard.set(newValue, forKey: "notification_time")
+                                    scheduleNotification()
+                                }
+                            }
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(Color.white)
+                                .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+                        )
+                        .padding(.horizontal)
+                    }
+                    
+                    // Privacy
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Privacy")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                        
+                        VStack(spacing: 0) {
+                            Toggle("Privacy Mode", isOn: $privacyMode)
+                                .padding()
+                            
+                            if privacyMode {
+                                Divider()
+                                    .padding(.leading)
+                                
+                                Text("Keep everything on device. AI features will be disabled.")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .padding()
+                            }
+                            
+                            Divider()
+                                .padding(.leading)
+                            
+                            NavigationLink(destination: CloudSyncSettingsView()) {
+                                HStack {
+                                    Text("iCloud Sync")
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                 }
-                                
-                                Spacer()
-                                
-                                Image(systemName: "crown.fill")
-                                    .foregroundColor(.yellow)
+                                .padding()
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                    }
-                    
-                    if !appState.isPremiumUser {
-                        HStack {
-                            Text("AI uses today:")
-                            Spacer()
-                            Text("\(appState.aiUsageCount) / 5")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                
-                // Notifications
-                Section(header: Text("Notifications")) {
-                    Toggle("Daily Reminders", isOn: $notificationsEnabled)
-                        .onChange(of: notificationsEnabled) { _, newValue in
-                            UserDefaults.standard.set(newValue, forKey: "notifications_enabled")
-                            if newValue {
-                                scheduleNotification()
-                            }
-                        }
-                    
-                    if notificationsEnabled {
-                        DatePicker(
-                            "Reminder Time",
-                            selection: $notificationTime,
-                            displayedComponents: .hourAndMinute
+                        .background(
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(Color.white)
+                                .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
                         )
-                        .onChange(of: notificationTime) { _, newValue in
-                            UserDefaults.standard.set(newValue, forKey: "notification_time")
-                            scheduleNotification()
+                        .padding(.horizontal)
+                    }
+                    
+                    // About
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("About")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                        
+                        VStack(spacing: 0) {
+                            NavigationLink(destination: HelpView()) {
+                                HStack {
+                                    Text("Help & Support")
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding()
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            Divider()
+                                .padding(.leading)
+                            
+                            HStack {
+                                Text("Version")
+                                Spacer()
+                                Text("1.0.0")
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding()
                         }
+                        .background(
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(Color.white)
+                                .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+                        )
+                        .padding(.horizontal)
                     }
-                }
-                
-                // Privacy
-                Section(header: Text("Privacy")) {
-                    Toggle("Privacy Mode", isOn: $privacyMode)
                     
-                    if privacyMode {
-                        Text("Keep everything on device. AI features will be disabled.")
-                            .font(.caption)
+                    // Developer
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Developer")
+                            .font(.headline)
                             .foregroundColor(.secondary)
-                    }
-                    
-                    NavigationLink("iCloud Sync") {
-                        CloudSyncSettingsView()
+                            .padding(.horizontal)
+                        
+                        VStack(spacing: 0) {
+                            Button(action: {
+                                appState.hasCompletedOnboarding = false
+                            }) {
+                                HStack {
+                                    Text("Reset Onboarding")
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                }
+                                .padding()
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            Divider()
+                                .padding(.leading)
+                            
+                            Button(role: .destructive, action: {
+                                // Implement data clearing
+                            }) {
+                                HStack {
+                                    Text("Clear All Data")
+                                        .foregroundColor(.red)
+                                    Spacer()
+                                }
+                                .padding()
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(Color.white)
+                                .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
+                        )
+                        .padding(.horizontal)
                     }
                 }
-                
-                // About
-                Section(header: Text("About")) {
-                    NavigationLink("Help & Support") {
-                        HelpView()
-                    }
-                    
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text("1.0.0")
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                // Developer
-                Section(header: Text("Developer")) {
-                    Button("Reset Onboarding") {
-                        appState.hasCompletedOnboarding = false
-                    }
-                    
-                    Button("Clear All Data", role: .destructive) {
-                        // Implement data clearing
-                    }
-                }
+                .padding(.vertical)
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Settings")
             .sheet(isPresented: $showingPremiumSheet) {
                 PremiumUpgradeView()
