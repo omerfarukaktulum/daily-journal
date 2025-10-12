@@ -182,7 +182,7 @@ struct HomeView: View {
                 QuickActionButton(
                     icon: "camera.circle.fill",
                     title: "Photo",
-                    color: .purple
+                    color: .blue
                 ) {
                     selectedQuickAction = .photo
                 }
@@ -190,7 +190,7 @@ struct HomeView: View {
                 QuickActionButton(
                     icon: "mic.circle.fill",
                     title: "Voice",
-                    color: .purple
+                    color: .pink
                 ) {
                     selectedQuickAction = .voice
                 }

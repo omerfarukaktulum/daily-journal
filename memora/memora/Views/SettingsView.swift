@@ -185,7 +185,7 @@ struct SettingsView: View {
                 .padding(.vertical, 24)
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingPremiumSheet) {
                 PremiumUpgradeView()
             }
