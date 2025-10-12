@@ -43,7 +43,7 @@ struct NewEntryView: View {
                             icon: "camera.fill",
                             title: "Photo",
                             description: "Capture a moment with images",
-                            color: .cyan,
+                            color: .orange,
                             action: { showingPhotoEditor = true }
                         )
                         
