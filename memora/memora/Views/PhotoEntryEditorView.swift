@@ -34,6 +34,8 @@ struct PhotoEntryEditorView: View {
     @State private var showingImageSourcePicker = false
     @State private var isFetchingLocation = false
     @State private var showingLocationSuggestions = false
+    @State private var selectedDate: Date = Date() // Date picker for entries
+    @State private var showingDatePicker = false // Show/hide date picker sheet
     
     @StateObject private var aiService = AIService()
     @StateObject private var locationManager = LocationManager()
@@ -42,7 +44,37 @@ struct PhotoEntryEditorView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Date Picker
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Date")
+                            .font(.callout)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        
+                        Button(action: {
+                            showingDatePicker = true
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "calendar")
+                                    .font(.title3)
+                                    .foregroundColor(.purple)
+                                Text(compactDate)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.primary)
+                            }
+                            .padding(.horizontal, 12)
+                            .frame(height: 44)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemBackground))
+                                    .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    
                     // Photo Source Buttons
                     HStack(spacing: 15) {
                         // Take Photo Button
@@ -152,28 +184,45 @@ struct PhotoEntryEditorView: View {
                     }
                     
                     // Caption/Content
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("Caption")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(.callout)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                         
-                        TextEditor(text: $content)
-                            .frame(minHeight: 150)
-                            .padding(8)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.purple.opacity(0.3), lineWidth: 1)
-                            )
+                        ZStack(alignment: .topLeading) {
+                            if content.isEmpty {
+                                Text("Write a caption for your photos...")
+                                    .font(.body)
+                                    .foregroundColor(.secondary.opacity(0.5))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 16)
+                            }
+                            
+                            TextEditor(text: $content)
+                                .frame(minHeight: 150)
+                                .padding(8)
+                                .scrollContentBackground(.hidden)
+                                .background(Color.clear)
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(content.isEmpty ? Color.clear : Color.purple.opacity(0.2), lineWidth: 1.5)
+                        )
                     }
                     
                     // Location Field
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Text("Location (Optional)")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                            Text("Location")
+                                .font(.callout)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
                             
                             Spacer()
                             
@@ -183,17 +232,26 @@ struct PhotoEntryEditorView: View {
                                     Text(isFetchingLocation ? "Getting..." : "Use Current")
                                 }
                                 .font(.caption)
+                                .fontWeight(.medium)
                                 .foregroundColor(.purple)
                             }
                             .disabled(isFetchingLocation)
                         }
                         
-                        TextField("Where was this taken?", text: $locationSearch.searchQuery)
-                            .textFieldStyle(.roundedBorder)
-                            .onChange(of: locationSearch.searchQuery) { newValue in
-                                location = newValue
-                                showingLocationSuggestions = !newValue.isEmpty && !locationSearch.suggestions.isEmpty
-                            }
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                            
+                            TextField("Where was this taken?", text: $locationSearch.searchQuery)
+                                .font(.body)
+                                .padding(12)
+                                .onChange(of: locationSearch.searchQuery) { newValue in
+                                    location = newValue
+                                    showingLocationSuggestions = !newValue.isEmpty && !locationSearch.suggestions.isEmpty
+                                }
+                        }
+                        .frame(height: 44)
                         
                         // Location suggestions
                         if showingLocationSuggestions && !locationSearch.suggestions.isEmpty {
@@ -233,28 +291,39 @@ struct PhotoEntryEditorView: View {
                     }
                     
                     // Tags
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("Tags")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(.callout)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                         
-                        FlowLayout(spacing: 8) {
-                            ForEach(tags, id: \.self) { tag in
-                                TagChip(text: tag) {
-                                    tags.removeAll { $0 == tag }
+                        if !tags.isEmpty {
+                            FlowLayout(spacing: 8) {
+                                ForEach(tags, id: \.self) { tag in
+                                    TagChip(text: tag) {
+                                        tags.removeAll { $0 == tag }
+                                    }
                                 }
                             }
                         }
                         
-                        HStack {
-                            TextField("Add a tag...", text: $newTag)
-                                .textFieldStyle(.roundedBorder)
-                                .onSubmit {
-                                    if !newTag.isEmpty && !tags.contains(newTag) {
-                                        tags.append(newTag)
-                                        newTag = ""
+                        HStack(spacing: 8) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemBackground))
+                                    .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                                
+                                TextField("Add a tag...", text: $newTag)
+                                    .font(.body)
+                                    .padding(12)
+                                    .onSubmit {
+                                        if !newTag.isEmpty && !tags.contains(newTag) {
+                                            tags.append(newTag)
+                                            newTag = ""
+                                        }
                                     }
-                                }
+                            }
+                            .frame(height: 44)
                             
                             Button(action: {
                                 if !newTag.isEmpty && !tags.contains(newTag) {
@@ -293,6 +362,7 @@ struct PhotoEntryEditorView: View {
                 }
                 .padding()
             }
+            .background(Color(.systemGroupedBackground))
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Photo Entry")
             .navigationBarTitleDisplayMode(.inline)
@@ -330,6 +400,40 @@ struct PhotoEntryEditorView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingDatePicker) {
+                VStack(spacing: 0) {
+                    DatePicker(
+                        "",
+                        selection: $selectedDate,
+                        in: ...Date(),
+                        displayedComponents: [.date]
+                    )
+                    .datePickerStyle(.graphical)
+                    .labelsHidden()
+                    .padding()
+                    .onChange(of: selectedDate) { _ in
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showingDatePicker = false
+                        }
+                    }
+                }
+                .background(Color(.systemBackground))
+                .presentationDetents([.height(400)])
+                .presentationDragIndicator(.visible)
+            }
+        }
+    }
+    
+    var compactDate: String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(selectedDate) {
+            return "Today"
+        } else if calendar.isDateInYesterday(selectedDate) {
+            return "Yesterday"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM d"
+            return formatter.string(from: selectedDate)
         }
     }
     
@@ -470,6 +574,7 @@ struct PhotoEntryEditorView: View {
             journalMode: appState.journalMode
         )
         
+        entry.createdAt = selectedDate // Use selected date
         entry.location = location.isEmpty ? nil : location
         
         if !tags.isEmpty {
