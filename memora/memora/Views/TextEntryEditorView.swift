@@ -29,6 +29,7 @@ struct TextEntryEditorView: View {
     @State private var isFetchingLocation = false
     @State private var showingLocationSuggestions = false
     @State private var selectedDate: Date = Date() // Date picker for entries
+    @State private var showingDatePicker = false // Show/hide date picker sheet
     
     @StateObject private var locationSearch = LocationSearchService()
     @State private var showingAIImprovement = false
@@ -50,14 +51,24 @@ struct TextEntryEditorView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
-                        DatePicker(
-                            "",
-                            selection: $selectedDate,
-                            in: ...Date(),
-                            displayedComponents: [.date]
-                        )
-                        .datePickerStyle(.compact)
-                        .labelsHidden()
+                        Button(action: {
+                            showingDatePicker = true
+                        }) {
+                            HStack {
+                                Image(systemName: "calendar")
+                                    .foregroundColor(.purple)
+                                Text(formattedDate)
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                     
                     // Title
@@ -99,7 +110,7 @@ struct TextEntryEditorView: View {
                         .padding()
                         .background(
                             LinearGradient(
-                                colors: content.isEmpty ? [.gray.opacity(0.5), .gray.opacity(0.5)] : [.purple, .blue],
+                                colors: [.purple, .blue],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -107,7 +118,7 @@ struct TextEntryEditorView: View {
                         .foregroundColor(.white)
                         .cornerRadius(12)
                     }
-                    .disabled(isLoadingAI || content.isEmpty)
+                    .disabled(isLoadingAI)
                     
                     // Mood Picker
                     VStack(alignment: .leading, spacing: 8) {
@@ -300,6 +311,47 @@ struct TextEntryEditorView: View {
             } message: {
                 Text("You've used all 5 free AI improvements for today. Upgrade to Premium for unlimited AI features!")
             }
+            .sheet(isPresented: $showingDatePicker) {
+                NavigationStack {
+                    VStack(spacing: 0) {
+                        DatePicker(
+                            "Select Date",
+                            selection: $selectedDate,
+                            in: ...Date(),
+                            displayedComponents: [.date]
+                        )
+                        .datePickerStyle(.graphical)
+                        .padding()
+                        
+                        Spacer()
+                    }
+                    .navigationTitle("Select Date")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") {
+                                showingDatePicker = false
+                            }
+                            .font(.body.bold())
+                            .foregroundColor(.purple)
+                        }
+                    }
+                }
+                .presentationDetents([.medium])
+            }
+        }
+    }
+    
+    var formattedDate: String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(selectedDate) {
+            return "Today"
+        } else if calendar.isDateInYesterday(selectedDate) {
+            return "Yesterday"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            return formatter.string(from: selectedDate)
         }
     }
     
@@ -357,6 +409,11 @@ struct TextEntryEditorView: View {
     }
     
     func improveWithAI() {
+        // If content is empty, show a helpful prompt
+        guard !content.isEmpty else {
+            return
+        }
+        
         guard appState.canUseAI() else {
             showingAILimitAlert = true
             return
