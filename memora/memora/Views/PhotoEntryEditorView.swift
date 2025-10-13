@@ -23,6 +23,7 @@ struct PhotoEntryEditorView: View {
     
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var loadedImages: [UIImage] = []
+    @State private var title: String = ""
     @State private var content: String = ""
     @State private var characterNames: String = ""
     @State private var location: String = ""
@@ -45,34 +46,56 @@ struct PhotoEntryEditorView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    // Date Picker
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Date")
-                            .font(.callout)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                        
-                        Button(action: {
-                            showingDatePicker = true
-                        }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "calendar")
-                                    .font(.title3)
-                                    .foregroundColor(.purple)
-                                Text(compactDate)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.primary)
+                    // Header: Date + Title (Side by Side)
+                    HStack(alignment: .top, spacing: 12) {
+                        // Date Picker (Compact)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Date")
+                                .font(.callout)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            
+                            Button(action: {
+                                showingDatePicker = true
+                            }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "calendar")
+                                        .font(.title3)
+                                        .foregroundColor(.purple)
+                                    Text(compactDate)
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.primary)
+                                }
+                                .padding(.horizontal, 12)
+                                .frame(height: 44)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(.systemBackground))
+                                        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                                )
                             }
-                            .padding(.horizontal, 12)
-                            .frame(height: 44)
-                            .background(
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        
+                        // Title (Takes remaining space)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Title")
+                                .font(.callout)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            
+                            ZStack {
                                 RoundedRectangle(cornerRadius: 12)
                                     .fill(Color(.systemBackground))
                                     .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
-                            )
+                                
+                                TextField("Give your entry a title...", text: $title)
+                                    .font(.body)
+                                    .padding(12)
+                            }
+                            .frame(height: 44)
                         }
-                        .buttonStyle(PlainButtonStyle())
                     }
                     
                     // Photo Source Buttons
@@ -575,6 +598,7 @@ struct PhotoEntryEditorView: View {
         )
         
         entry.createdAt = selectedDate // Use selected date
+        entry.title = title.isEmpty ? nil : title
         entry.location = location.isEmpty ? nil : location
         
         if !tags.isEmpty {
