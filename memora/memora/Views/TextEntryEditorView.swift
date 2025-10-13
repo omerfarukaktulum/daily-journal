@@ -44,90 +44,125 @@ struct TextEntryEditorView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Date Picker
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Date")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Button(action: {
-                            showingDatePicker = true
-                        }) {
-                            HStack {
-                                Image(systemName: "calendar")
-                                    .foregroundColor(.purple)
-                                Text(formattedDate)
-                                    .foregroundColor(.primary)
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 24) {
+                    // Header: Date + Title (Side by Side)
+                    HStack(alignment: .top, spacing: 12) {
+                        // Date Picker (Compact)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Date")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                            
+                            Button(action: {
+                                showingDatePicker = true
+                            }) {
+                                VStack(spacing: 4) {
+                                    Image(systemName: "calendar")
+                                        .font(.title2)
+                                        .foregroundColor(.purple)
+                                    Text(compactDate)
+                                        .font(.caption2)
+                                        .foregroundColor(.primary)
+                                }
+                                .frame(width: 70, height: 70)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(.systemBackground))
+                                        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                                )
                             }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    
-                    // Title
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Title")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
                         
-                        TextField("Give your entry a title...", text: $title)
-                            .textFieldStyle(.roundedBorder)
-                            .font(.headline)
+                        // Title (Takes remaining space)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Title")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.secondary)
+                            
+                            TextField("Give your entry a title...", text: $title)
+                                .font(.body)
+                                .padding(12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(.systemBackground))
+                                        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                                )
+                        }
                     }
                     
-                    // Content
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Your Thoughts")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        TextEditor(text: $content)
-                            .frame(minHeight: 200)
-                            .padding(8)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.purple.opacity(0.3), lineWidth: 1)
-                            )
-                    }
-                    
-                    // AI Improve Button
-                    Button(action: improveWithAI) {
+                    // Content - Main Writing Area
+                    VStack(alignment: .leading, spacing: 12) {
                         HStack {
-                            Image(systemName: "sparkles")
-                            Text(isLoadingAI ? "Improving..." : "Improve with AI")
+                            Text("Your Thoughts")
+                                .font(.callout)
                                 .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            // AI Button (Inline with label)
+                            Button(action: improveWithAI) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: isLoadingAI ? "arrow.clockwise" : "sparkles")
+                                        .font(.caption)
+                                    Text(isLoadingAI ? "Improving..." : "Improve with AI")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    LinearGradient(
+                                        colors: [.purple, .blue],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(8)
+                            }
+                            .disabled(isLoadingAI)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
+                        
+                        ZStack(alignment: .topLeading) {
+                            // Placeholder
+                            if content.isEmpty {
+                                Text("Start writing your thoughts, feelings, or memories...")
+                                    .font(.body)
+                                    .foregroundColor(.secondary.opacity(0.5))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 16)
+                            }
+                            
+                            TextEditor(text: $content)
+                                .frame(minHeight: 180)
+                                .padding(8)
+                                .scrollContentBackground(.hidden)
+                                .background(Color.clear)
+                        }
                         .background(
-                            LinearGradient(
-                                colors: [.purple, .blue],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
                         )
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(content.isEmpty ? Color.clear : Color.purple.opacity(0.2), lineWidth: 1.5)
+                        )
                     }
-                    .disabled(isLoadingAI)
                     
                     // Mood Picker
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("How are you feeling?")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(.callout)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                         
                         ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
+                            HStack(spacing: 10) {
                                 ForEach(["😊 Happy", "😌 Calm", "😢 Sad", "😰 Anxious", "😴 Tired", "🎉 Excited"], id: \.self) { moodOption in
                                     MoodChip(
                                         label: moodOption,
@@ -140,11 +175,12 @@ struct TextEntryEditorView: View {
                     }
                     
                     // Location
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Text("Location")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .font(.callout)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
                             
                             Spacer()
                             
@@ -154,13 +190,20 @@ struct TextEntryEditorView: View {
                                     Text(isFetchingLocation ? "Getting..." : "Use Current")
                                 }
                                 .font(.caption)
+                                .fontWeight(.medium)
                                 .foregroundColor(.purple)
                             }
                             .disabled(isFetchingLocation)
                         }
                         
                         TextField("Where are you?", text: $locationSearch.searchQuery)
-                            .textFieldStyle(.roundedBorder)
+                            .font(.body)
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemBackground))
+                                    .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                            )
                             .onChange(of: locationSearch.searchQuery) { newValue in
                                 location = newValue
                                 showingLocationSuggestions = !newValue.isEmpty && !locationSearch.suggestions.isEmpty
@@ -204,10 +247,11 @@ struct TextEntryEditorView: View {
                     }
                     
                     // Tags
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("Tags")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(.callout)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                         
                         FlowLayout(spacing: 8) {
                             ForEach(tags, id: \.self) { tag in
@@ -217,9 +261,15 @@ struct TextEntryEditorView: View {
                             }
                         }
                         
-                        HStack {
+                        HStack(spacing: 8) {
                             TextField("Add a tag...", text: $newTag)
-                                .textFieldStyle(.roundedBorder)
+                                .font(.body)
+                                .padding(12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(.systemBackground))
+                                        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                                )
                                 .onSubmit {
                                     if !newTag.isEmpty && !tags.contains(newTag) {
                                         tags.append(newTag)
@@ -264,6 +314,7 @@ struct TextEntryEditorView: View {
                 }
                 .padding()
             }
+            .background(Color(.systemGroupedBackground))
             .scrollDismissesKeyboard(.interactively)
             .onTapGesture {
                 hideKeyboard()
@@ -313,7 +364,34 @@ struct TextEntryEditorView: View {
             }
             .sheet(isPresented: $showingDatePicker) {
                 NavigationStack {
-                    VStack(spacing: 0) {
+                    VStack(spacing: 16) {
+                        // Quick "Today" Button
+                        Button(action: {
+                            selectedDate = Date()
+                            showingDatePicker = false
+                        }) {
+                            HStack {
+                                Image(systemName: "calendar.badge.clock")
+                                    .foregroundColor(.purple)
+                                Text("Today")
+                                    .font(.body)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.primary)
+                                Spacer()
+                                Text(Date(), style: .date)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.purple.opacity(0.1))
+                            )
+                            .padding(.horizontal)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        // Calendar Picker
                         DatePicker(
                             "Select Date",
                             selection: $selectedDate,
@@ -321,10 +399,11 @@ struct TextEntryEditorView: View {
                             displayedComponents: [.date]
                         )
                         .datePickerStyle(.graphical)
-                        .padding()
+                        .padding(.horizontal)
                         
                         Spacer()
                     }
+                    .padding(.top)
                     .navigationTitle("Select Date")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
@@ -337,7 +416,7 @@ struct TextEntryEditorView: View {
                         }
                     }
                 }
-                .presentationDetents([.medium])
+                .presentationDetents([.medium, .large])
             }
         }
     }
@@ -351,6 +430,19 @@ struct TextEntryEditorView: View {
         } else {
             let formatter = DateFormatter()
             formatter.dateStyle = .medium
+            return formatter.string(from: selectedDate)
+        }
+    }
+    
+    var compactDate: String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(selectedDate) {
+            return "Today"
+        } else if calendar.isDateInYesterday(selectedDate) {
+            return "Yesterday"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM d"
             return formatter.string(from: selectedDate)
         }
     }
