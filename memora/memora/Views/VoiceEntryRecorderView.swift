@@ -477,7 +477,7 @@ struct VoiceEntryRecorderView: View {
                         saveEntry()
                     }
                     .font(.body.bold())
-                    .foregroundColor(transcribedText.isEmpty ? .secondary : .purple)
+                    .tint(transcribedText.isEmpty ? .secondary : .purple)
                     .disabled(transcribedText.isEmpty)
                 }
             

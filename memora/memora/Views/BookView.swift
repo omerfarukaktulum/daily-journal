@@ -669,13 +669,18 @@ struct EntryDetailView: View {
     }
     
     func deleteEntry() {
-        managedObjectContext.delete(entry)
+        // Dismiss first to avoid UI issues
+        dismiss()
         
-        do {
-            try managedObjectContext.save()
-            dismiss()
-        } catch {
-            print("Failed to delete entry: \(error)")
+        // Delete after a brief delay to let the view dismiss
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            managedObjectContext.delete(entry)
+            
+            do {
+                try managedObjectContext.save()
+            } catch {
+                print("Failed to delete entry: \(error)")
+            }
         }
     }
 }
