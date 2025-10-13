@@ -405,11 +405,25 @@ struct PhotoEntryEditorView: View {
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(action: {
                         saveEntry()
+                    }) {
+                        Text("Save")
+                            .font(.body.bold())
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                (loadedImages.isEmpty || content.isEmpty) ? 
+                                    AnyView(Color.gray.opacity(0.3)) : 
+                                    AnyView(LinearGradient(
+                                        colors: [.purple, .blue],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    ))
+                            )
+                            .cornerRadius(8)
                     }
-                    .font(.body.bold())
-                    .foregroundColor((loadedImages.isEmpty || content.isEmpty) ? .secondary : .purple)
                     .disabled(loadedImages.isEmpty || content.isEmpty)
                 }
                 

@@ -201,11 +201,25 @@ struct EditEntryView: View {
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(action: {
                         saveChanges()
+                    }) {
+                        Text("Save")
+                            .font(.body.bold())
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                content.isEmpty ? 
+                                    AnyView(Color.gray.opacity(0.3)) : 
+                                    AnyView(LinearGradient(
+                                        colors: [.purple, .blue],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    ))
+                            )
+                            .cornerRadius(8)
                     }
-                    .font(.body.bold())
-                    .foregroundColor(content.isEmpty ? .secondary : .purple)
                     .disabled(content.isEmpty)
                 }
                 
