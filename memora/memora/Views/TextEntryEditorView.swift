@@ -320,9 +320,6 @@ struct TextEntryEditorView: View {
             }
             .background(Color(.systemGroupedBackground))
             .scrollDismissesKeyboard(.interactively)
-            .onTapGesture {
-                hideKeyboard()
-            }
             .navigationTitle("New Entry")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -484,28 +481,43 @@ struct TextEntryEditorView: View {
     }
     
     func fetchCurrentLocation() {
+        #if targetEnvironment(simulator)
+        // For simulator, provide a helpful default or message
         isFetchingLocation = true
-        locationManager.requestLocation()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Try to get location, but if it fails, provide helpful message
+            locationManager.requestLocation()
+        }
         
-        let timeout: TimeInterval = isSimulator() ? 5.0 : 2.0
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {
-            if let locationString = locationManager.locationString {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            if let locationString = locationManager.locationString, locationString != "Unable to get location" {
                 location = locationString
                 locationSearch.searchQuery = locationString
             } else {
-                #if targetEnvironment(simulator)
-                let message = "Set location in: Features → Location → Custom..."
-                location = message
-                locationSearch.searchQuery = message
-                #else
-                location = "Unable to get location"
-                locationSearch.searchQuery = "Unable to get location"
-                #endif
+                // Default simulator location (Cupertino, CA - Apple HQ)
+                location = "Cupertino, CA"
+                locationSearch.searchQuery = "Cupertino, CA"
             }
             isFetchingLocation = false
             showingLocationSuggestions = false
         }
+        #else
+        // Real device
+        isFetchingLocation = true
+        locationManager.requestLocation()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            if let locationString = locationManager.locationString {
+                location = locationString
+                locationSearch.searchQuery = locationString
+            } else {
+                location = "Unable to get location"
+                locationSearch.searchQuery = "Unable to get location"
+            }
+            isFetchingLocation = false
+            showingLocationSuggestions = false
+        }
+        #endif
     }
     
     func isSimulator() -> Bool {
