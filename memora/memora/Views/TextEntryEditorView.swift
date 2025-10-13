@@ -344,7 +344,7 @@ struct TextEntryEditorView: View {
                         saveEntry()
                     }
                     .font(.body.bold())
-                    .tint(content.isEmpty ? .secondary : .purple)
+                    .tint(.purple)
                     .disabled(content.isEmpty)
                 }
                 

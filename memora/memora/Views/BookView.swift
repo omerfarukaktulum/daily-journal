@@ -228,7 +228,22 @@ struct BookView: View {
             .background(Color(.systemGroupedBackground))
             .sheet(isPresented: $showingEntryDetail) {
                 if let entry = selectedEntry {
-                    EntryDetailView(entry: entry)
+                    EntryDetailView(entry: entry, onDelete: {
+                        // Handle deletion from parent
+                        showingEntryDetail = false
+                        selectedEntry = nil
+                        
+                        // Delete after sheet dismisses
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            managedObjectContext.delete(entry)
+                            
+                            do {
+                                try managedObjectContext.save()
+                            } catch {
+                                print("Failed to delete entry: \(error)")
+                            }
+                        }
+                    })
                 }
             }
             .onChange(of: showingEntryDetail) { newValue in
@@ -534,6 +549,7 @@ struct EmptyBookView: View {
 
 struct EntryDetailView: View {
     let entry: DiaryEntry
+    let onDelete: () -> Void
     @Environment(\.dismiss) var dismiss
     @Environment(\.managedObjectContext) var managedObjectContext
     
@@ -669,19 +685,9 @@ struct EntryDetailView: View {
     }
     
     func deleteEntry() {
-        // Dismiss first to avoid UI issues
-        dismiss()
-        
-        // Delete after a brief delay to let the view dismiss
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            managedObjectContext.delete(entry)
-            
-            do {
-                try managedObjectContext.save()
-            } catch {
-                print("Failed to delete entry: \(error)")
-            }
-        }
+        // Call parent's delete handler
+        onDelete()
+        // Dismiss will be handled by parent
     }
 }
 

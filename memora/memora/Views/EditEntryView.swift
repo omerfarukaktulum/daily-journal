@@ -205,7 +205,7 @@ struct EditEntryView: View {
                         saveChanges()
                     }
                     .font(.body.bold())
-                    .tint(content.isEmpty ? .secondary : .purple)
+                    .tint(.purple)
                     .disabled(content.isEmpty)
                 }
                 

@@ -427,7 +427,7 @@ struct PhotoEntryEditorView: View {
                         saveEntry()
                     }
                     .font(.body.bold())
-                    .tint((loadedImages.isEmpty || content.isEmpty) ? .secondary : .purple)
+                    .tint(.purple)
                     .disabled(loadedImages.isEmpty || content.isEmpty)
                 }
                 
