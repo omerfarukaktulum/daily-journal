@@ -57,15 +57,17 @@ struct TextEntryEditorView: View {
                             Button(action: {
                                 showingDatePicker = true
                             }) {
-                                VStack(spacing: 4) {
+                                HStack(spacing: 8) {
                                     Image(systemName: "calendar")
-                                        .font(.title2)
+                                        .font(.title3)
                                         .foregroundColor(.purple)
                                     Text(compactDate)
-                                        .font(.caption2)
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
                                         .foregroundColor(.primary)
                                 }
-                                .frame(width: 70, height: 70)
+                                .padding(.horizontal, 12)
+                                .frame(height: 44)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
                                         .fill(Color(.systemBackground))
