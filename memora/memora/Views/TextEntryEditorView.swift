@@ -379,72 +379,26 @@ struct TextEntryEditorView: View {
                 Text("To use AI features, please enter your OpenAI API key. You can get one from platform.openai.com/api-keys")
             }
             .sheet(isPresented: $showingDatePicker) {
-                NavigationStack {
-                    ZStack {
-                        // Background
-                        Color(.systemGroupedBackground)
-                            .ignoresSafeArea()
-                        
-                        VStack(spacing: 16) {
-                            // Quick "Today" Button
-                            Button(action: {
-                                selectedDate = Date()
-                                showingDatePicker = false
-                            }) {
-                                HStack {
-                                    Image(systemName: "calendar.badge.clock")
-                                        .foregroundColor(.purple)
-                                    Text("Today")
-                                        .font(.body)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.primary)
-                                    Spacer()
-                                    Text(Date(), style: .date)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(.systemBackground))
-                                        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
-                                )
-                                .padding(.horizontal)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            // Calendar Picker
-                            DatePicker(
-                                "Select Date",
-                                selection: $selectedDate,
-                                in: ...Date(),
-                                displayedComponents: [.date]
-                            )
-                            .datePickerStyle(.graphical)
-                            .padding(.horizontal)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(.systemBackground))
-                            )
-                            .padding(.horizontal)
-                            
-                            Spacer()
-                        }
-                        .padding(.top)
-                    }
-                    .navigationTitle("Select Date")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") {
-                                showingDatePicker = false
-                            }
-                            .font(.body.bold())
-                            .foregroundColor(.purple)
+                VStack(spacing: 0) {
+                    // Just the Calendar - clean and simple
+                    DatePicker(
+                        "",
+                        selection: $selectedDate,
+                        in: ...Date(),
+                        displayedComponents: [.date]
+                    )
+                    .datePickerStyle(.graphical)
+                    .labelsHidden()
+                    .padding()
+                    .onChange(of: selectedDate) { _ in
+                        // Auto-close when date is selected
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showingDatePicker = false
                         }
                     }
                 }
-                .presentationDetents([.medium, .large])
+                .background(Color(.systemBackground))
+                .presentationDetents([.height(400)])
                 .presentationDragIndicator(.visible)
             }
         }
