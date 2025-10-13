@@ -50,13 +50,6 @@
             ReferencedContainer = "container:memora.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <EnvironmentVariables>
-         <EnvironmentVariable
-            key = "OPENAI_API_KEY"
-            value = "YOUR_API_KEY_HERE"
-            isEnabled = "NO">
-         </EnvironmentVariable>
-      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

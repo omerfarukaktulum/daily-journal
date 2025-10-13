@@ -16,9 +16,17 @@ class AIService: ObservableObject {
     init() {
         // Read API key from UserDefaults (where user saves it in Settings)
         // In production, should use Keychain for better security
-        self.apiKey = UserDefaults.standard.string(forKey: "openai_api_key") ?? 
-                      ProcessInfo.processInfo.environment["OPENAI_API_KEY"] ?? 
-                      "YOUR_API_KEY_HERE"
+        let userDefaultsKey = UserDefaults.standard.string(forKey: "openai_api_key")
+        let envKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"]
+        
+        // Debug logging
+        print("🔑 API Key Sources:")
+        print("   - UserDefaults: \(userDefaultsKey?.prefix(10) ?? "nil")...")
+        print("   - Environment: \(envKey?.prefix(10) ?? "nil")...")
+        
+        self.apiKey = userDefaultsKey ?? envKey ?? "YOUR_API_KEY_HERE"
+        
+        print("   - Final key: \(self.apiKey.prefix(10))...")
     }
     
     func improveText(_ text: String) async throws -> [String] {
