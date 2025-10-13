@@ -36,6 +36,8 @@ struct TextEntryEditorView: View {
     @State private var aiSuggestions: [String] = []
     @State private var isLoadingAI = false
     @State private var showingAILimitAlert = false
+    @State private var showingAPIKeyAlert = false
+    @State private var apiKeyInput = ""
     @State private var usedAI = false // Track if AI was used
     
     @StateObject private var aiService = AIService()
@@ -50,9 +52,9 @@ struct TextEntryEditorView: View {
                         // Date Picker (Compact)
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Date")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.secondary)
+                                .font(.callout)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
                             
                             Button(action: {
                                 showingDatePicker = true
@@ -80,9 +82,9 @@ struct TextEntryEditorView: View {
                         // Title (Takes remaining space)
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Title")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.secondary)
+                                .font(.callout)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
                             
                             TextField("Give your entry a title...", text: $title)
                                 .font(.body)
@@ -364,6 +366,18 @@ struct TextEntryEditorView: View {
             } message: {
                 Text("You've used all 5 free AI improvements for today. Upgrade to Premium for unlimited AI features!")
             }
+            .alert("OpenAI API Key Required", isPresented: $showingAPIKeyAlert) {
+                TextField("Enter your OpenAI API key", text: $apiKeyInput)
+                Button("Save") {
+                    UserDefaults.standard.set(apiKeyInput, forKey: "openai_api_key")
+                    apiKeyInput = ""
+                }
+                Button("Cancel", role: .cancel) {
+                    apiKeyInput = ""
+                }
+            } message: {
+                Text("To use AI features, please enter your OpenAI API key. You can get one from platform.openai.com/api-keys")
+            }
             .sheet(isPresented: $showingDatePicker) {
                 NavigationStack {
                     VStack(spacing: 16) {
@@ -523,6 +537,11 @@ struct TextEntryEditorView: View {
                     appState.incrementAIUsage()
                     isLoadingAI = false
                     showingAIImprovement = true
+                }
+            } catch AIServiceError.apiKeyNotConfigured {
+                await MainActor.run {
+                    isLoadingAI = false
+                    showingAPIKeyAlert = true
                 }
             } catch {
                 await MainActor.run {
