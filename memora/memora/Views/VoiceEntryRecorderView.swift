@@ -229,6 +229,29 @@ struct VoiceEntryRecorderView: View {
                         
                         Spacer()
                         
+                        // AI Button (Inline with label)
+                        Button(action: improveWithAI) {
+                            HStack(spacing: 6) {
+                                Image(systemName: isLoadingAI ? "arrow.clockwise" : "sparkles")
+                                    .font(.caption)
+                                Text(isLoadingAI ? "Improving..." : "Improve with AI")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                LinearGradient(
+                                    colors: [.purple, .blue],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(8)
+                        }
+                        .disabled(isLoadingAI)
+                        
                         Button(action: {
                             hasRecorded = false
                             transcribedText = ""
@@ -268,27 +291,6 @@ struct VoiceEntryRecorderView: View {
                             .stroke(transcribedText.isEmpty ? Color.clear : Color.purple.opacity(0.2), lineWidth: 1.5)
                     )
                 }
-                
-                // AI Improve Button
-                Button(action: improveWithAI) {
-                    HStack {
-                        Image(systemName: "sparkles")
-                        Text(isLoadingAI ? "Improving..." : "Improve with AI")
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(
-                        LinearGradient(
-                            colors: [.purple, .blue],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                }
-                .disabled(isLoadingAI)
                 
                 // Mood Picker
                 VStack(alignment: .leading, spacing: 12) {

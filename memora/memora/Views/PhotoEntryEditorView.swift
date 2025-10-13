@@ -183,35 +183,41 @@ struct PhotoEntryEditorView: View {
                         }
                     }
                     
-                    // AI Generate Caption Button
-                    if !loadedImages.isEmpty && content.isEmpty {
-                        Button(action: generateCaption) {
-                            HStack {
-                                Image(systemName: "sparkles")
-                                Text(isGeneratingCaption ? "Generating..." : "Generate Caption with AI")
-                                    .fontWeight(.semibold)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                LinearGradient(
-                                    colors: [.blue, .purple],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                        }
-                        .disabled(isGeneratingCaption)
-                    }
-                    
                     // Caption/Content
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Caption")
-                            .font(.callout)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
+                        HStack {
+                            Text("Caption")
+                                .font(.callout)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            // AI Button (Inline with label) - only show when images loaded
+                            if !loadedImages.isEmpty {
+                                Button(action: generateCaption) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: isGeneratingCaption ? "arrow.clockwise" : "sparkles")
+                                            .font(.caption)
+                                        Text(isGeneratingCaption ? "Generating..." : "Generate with AI")
+                                            .font(.caption)
+                                            .fontWeight(.semibold)
+                                    }
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(
+                                        LinearGradient(
+                                            colors: [.purple, .blue],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .cornerRadius(8)
+                                }
+                                .disabled(isGeneratingCaption)
+                            }
+                        }
                         
                         ZStack(alignment: .topLeading) {
                             if content.isEmpty {
