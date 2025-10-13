@@ -227,9 +227,23 @@ struct VoiceEntryRecorderView: View {
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
                         
+                        // Re-record button (left side)
+                        Button(action: {
+                            hasRecorded = false
+                            transcribedText = ""
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.counterclockwise")
+                                Text("Re-record")
+                            }
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.pink)
+                        }
+                        
                         Spacer()
                         
-                        // AI Button (Inline with label)
+                        // AI Button (right-aligned)
                         Button(action: improveWithAI) {
                             HStack(spacing: 6) {
                                 Image(systemName: isLoadingAI ? "arrow.clockwise" : "sparkles")
@@ -251,19 +265,6 @@ struct VoiceEntryRecorderView: View {
                             .cornerRadius(8)
                         }
                         .disabled(isLoadingAI)
-                        
-                        Button(action: {
-                            hasRecorded = false
-                            transcribedText = ""
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "arrow.counterclockwise")
-                                Text("Re-record")
-                            }
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(.pink)
-                        }
                     }
                     
                     ZStack(alignment: .topLeading) {
@@ -472,25 +473,11 @@ struct VoiceEntryRecorderView: View {
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(action: {
+                    Button("Save") {
                         saveEntry()
-                    }) {
-                        Text("Save")
-                            .font(.body.bold())
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                transcribedText.isEmpty ? 
-                                    AnyView(Color.gray.opacity(0.3)) : 
-                                    AnyView(LinearGradient(
-                                        colors: [.purple, .blue],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    ))
-                            )
-                            .cornerRadius(8)
                     }
+                    .font(.body.bold())
+                    .foregroundColor(transcribedText.isEmpty ? .secondary : .purple)
                     .disabled(transcribedText.isEmpty)
                 }
             

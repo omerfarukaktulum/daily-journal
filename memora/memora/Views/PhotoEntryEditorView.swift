@@ -37,6 +37,12 @@ struct PhotoEntryEditorView: View {
     @State private var showingLocationSuggestions = false
     @State private var selectedDate: Date = Date() // Date picker for entries
     @State private var showingDatePicker = false // Show/hide date picker sheet
+    @State private var showingAIImprovement = false
+    @State private var aiSuggestions: [String] = []
+    @State private var isLoadingAI = false
+    @State private var showingAILimitAlert = false
+    @State private var showingAPIKeyAlert = false
+    @State private var usedAI = false
     
     @StateObject private var aiService = AIService()
     @StateObject private var locationManager = LocationManager()
@@ -193,13 +199,15 @@ struct PhotoEntryEditorView: View {
                             
                             Spacer()
                             
-                            // AI Button (Inline with label) - only show when images loaded
+                            // AI Button (Inline with label)
                             if !loadedImages.isEmpty {
-                                Button(action: generateCaption) {
+                                Button(action: content.isEmpty ? generateCaption : improveWithAI) {
                                     HStack(spacing: 6) {
-                                        Image(systemName: isGeneratingCaption ? "arrow.clockwise" : "sparkles")
+                                        Image(systemName: (isGeneratingCaption || isLoadingAI) ? "arrow.clockwise" : "sparkles")
                                             .font(.caption)
-                                        Text(isGeneratingCaption ? "Generating..." : "Generate with AI")
+                                        Text((isGeneratingCaption || isLoadingAI) ? 
+                                             (content.isEmpty ? "Generating..." : "Improving...") : 
+                                             (content.isEmpty ? "Generate with AI" : "Improve with AI"))
                                             .font(.caption)
                                             .fontWeight(.semibold)
                                     }
@@ -215,7 +223,7 @@ struct PhotoEntryEditorView: View {
                                     )
                                     .cornerRadius(8)
                                 }
-                                .disabled(isGeneratingCaption)
+                                .disabled(isGeneratingCaption || isLoadingAI)
                             }
                         }
                         
@@ -405,25 +413,11 @@ struct PhotoEntryEditorView: View {
                 }
                 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(action: {
+                    Button("Save") {
                         saveEntry()
-                    }) {
-                        Text("Save")
-                            .font(.body.bold())
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                (loadedImages.isEmpty || content.isEmpty) ? 
-                                    AnyView(Color.gray.opacity(0.3)) : 
-                                    AnyView(LinearGradient(
-                                        colors: [.purple, .blue],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    ))
-                            )
-                            .cornerRadius(8)
                     }
+                    .font(.body.bold())
+                    .foregroundColor((loadedImages.isEmpty || content.isEmpty) ? .secondary : .purple)
                     .disabled(loadedImages.isEmpty || content.isEmpty)
                 }
                 
@@ -463,6 +457,28 @@ struct PhotoEntryEditorView: View {
                 .background(Color(.systemBackground))
                 .presentationDetents([.height(400)])
                 .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $showingAIImprovement) {
+                AIImprovementSheet(suggestions: aiSuggestions) { selectedVersion in
+                    content = selectedVersion
+                    usedAI = true
+                    showingAIImprovement = false
+                }
+            }
+            .alert("AI Limit Reached", isPresented: $showingAILimitAlert) {
+                Button("OK", role: .cancel) { }
+                Button("Upgrade to Premium") {
+                    // Navigate to premium subscription
+                }
+            } message: {
+                Text(appState.isPremiumUser ? 
+                     "You've used all 3 AI improvements for today. Come back tomorrow!" :
+                     "You've used all 5 free AI improvements. Upgrade to Premium for 3 AI uses per day!")
+            }
+            .alert("API Key Required", isPresented: $showingAPIKeyAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Please configure your OpenAI API key in Settings to use AI features.")
             }
         }
     }
@@ -552,6 +568,7 @@ struct PhotoEntryEditorView: View {
     
     func generateCaption() {
         guard appState.canUseAI() else {
+            showingAILimitAlert = true
             return
         }
         
@@ -579,12 +596,53 @@ struct PhotoEntryEditorView: View {
                 await MainActor.run {
                     content = caption
                     appState.incrementAIUsage()
+                    usedAI = true
                     isGeneratingCaption = false
+                }
+            } catch AIServiceError.apiKeyNotConfigured {
+                await MainActor.run {
+                    isGeneratingCaption = false
+                    showingAPIKeyAlert = true
                 }
             } catch {
                 await MainActor.run {
                     isGeneratingCaption = false
                     print("Caption generation failed: \(error)")
+                }
+            }
+        }
+    }
+    
+    func improveWithAI() {
+        guard !content.isEmpty else {
+            return
+        }
+        
+        guard appState.canUseAI() else {
+            showingAILimitAlert = true
+            return
+        }
+        
+        isLoadingAI = true
+        
+        Task {
+            do {
+                let suggestions = try await aiService.improveText(content)
+                await MainActor.run {
+                    aiSuggestions = suggestions
+                    appState.incrementAIUsage()
+                    isLoadingAI = false
+                    showingAIImprovement = true
+                }
+            } catch AIServiceError.apiKeyNotConfigured {
+                await MainActor.run {
+                    isLoadingAI = false
+                    showingAPIKeyAlert = true
+                }
+            } catch {
+                await MainActor.run {
+                    isLoadingAI = false
+                    print("AI improvement failed: \(error)")
                 }
             }
         }
@@ -620,6 +678,7 @@ struct PhotoEntryEditorView: View {
         entry.createdAt = selectedDate // Use selected date
         entry.title = title.isEmpty ? nil : title
         entry.location = location.isEmpty ? nil : location
+        entry.aiImproved = usedAI // Set AI improved flag
         
         if !tags.isEmpty {
             if let jsonData = try? JSONEncoder().encode(tags),
