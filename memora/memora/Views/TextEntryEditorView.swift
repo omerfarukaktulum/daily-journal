@@ -95,6 +95,7 @@ struct TextEntryEditorView: View {
                                     .font(.body)
                                     .padding(12)
                             }
+                            .frame(height: 44)
                         }
                     }
                     
@@ -214,6 +215,7 @@ struct TextEntryEditorView: View {
                                     showingLocationSuggestions = !newValue.isEmpty && !locationSearch.suggestions.isEmpty
                                 }
                         }
+                        .frame(height: 44)
                         
                         // Location suggestions
                         if showingLocationSuggestions && !locationSearch.suggestions.isEmpty {
@@ -259,10 +261,12 @@ struct TextEntryEditorView: View {
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
                         
-                        FlowLayout(spacing: 8) {
-                            ForEach(tags, id: \.self) { tag in
-                                TagChip(text: tag) {
-                                    tags.removeAll { $0 == tag }
+                        if !tags.isEmpty {
+                            FlowLayout(spacing: 8) {
+                                ForEach(tags, id: \.self) { tag in
+                                    TagChip(text: tag) {
+                                        tags.removeAll { $0 == tag }
+                                    }
                                 }
                             }
                         }
@@ -283,6 +287,7 @@ struct TextEntryEditorView: View {
                                         }
                                     }
                             }
+                            .frame(height: 44)
                             
                             Button(action: {
                                 if !newTag.isEmpty && !tags.contains(newTag) {
