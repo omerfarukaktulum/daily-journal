@@ -380,46 +380,58 @@ struct TextEntryEditorView: View {
             }
             .sheet(isPresented: $showingDatePicker) {
                 NavigationStack {
-                    VStack(spacing: 16) {
-                        // Quick "Today" Button
-                        Button(action: {
-                            selectedDate = Date()
-                            showingDatePicker = false
-                        }) {
-                            HStack {
-                                Image(systemName: "calendar.badge.clock")
-                                    .foregroundColor(.purple)
-                                Text("Today")
-                                    .font(.body)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.primary)
-                                Spacer()
-                                Text(Date(), style: .date)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                    ZStack {
+                        // Background
+                        Color(.systemGroupedBackground)
+                            .ignoresSafeArea()
+                        
+                        VStack(spacing: 16) {
+                            // Quick "Today" Button
+                            Button(action: {
+                                selectedDate = Date()
+                                showingDatePicker = false
+                            }) {
+                                HStack {
+                                    Image(systemName: "calendar.badge.clock")
+                                        .foregroundColor(.purple)
+                                    Text("Today")
+                                        .font(.body)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    Text(Date(), style: .date)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(.systemBackground))
+                                        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                                )
+                                .padding(.horizontal)
                             }
-                            .padding()
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            // Calendar Picker
+                            DatePicker(
+                                "Select Date",
+                                selection: $selectedDate,
+                                in: ...Date(),
+                                displayedComponents: [.date]
+                            )
+                            .datePickerStyle(.graphical)
+                            .padding(.horizontal)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.purple.opacity(0.1))
+                                    .fill(Color(.systemBackground))
                             )
                             .padding(.horizontal)
+                            
+                            Spacer()
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        // Calendar Picker
-                        DatePicker(
-                            "Select Date",
-                            selection: $selectedDate,
-                            in: ...Date(),
-                            displayedComponents: [.date]
-                        )
-                        .datePickerStyle(.graphical)
-                        .padding(.horizontal)
-                        
-                        Spacer()
+                        .padding(.top)
                     }
-                    .padding(.top)
                     .navigationTitle("Select Date")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
@@ -433,6 +445,7 @@ struct TextEntryEditorView: View {
                     }
                 }
                 .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
             }
         }
     }
