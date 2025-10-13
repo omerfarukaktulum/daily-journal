@@ -412,13 +412,27 @@ struct JournalEntryCard: View {
             // Header: Date + Time on left, Mood + AI badge on right
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                Text(entry.createdAt, style: .date)
-                    .font(.subheadline.bold())
-                
-                Text(entry.createdAt, style: .time)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
+                    // Date + Title on same line
+                    HStack(spacing: 8) {
+                        Text(entry.createdAt, style: .date)
+                            .font(.subheadline.bold())
+                        
+                        if let title = entry.title, !title.isEmpty {
+                            Text("•")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            
+                            Text(title)
+                                .font(.subheadline.bold())
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                        }
+                    }
+                    
+                    Text(entry.createdAt, style: .time)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
                 
                 Spacer()
                 
@@ -438,14 +452,6 @@ struct JournalEntryCard: View {
                     }
                 }
             }
-            
-            // Title (if exists)
-                    if let title = entry.title, !title.isEmpty {
-                        Text(title)
-                    .font(.callout.bold())
-                            .foregroundColor(.primary)
-                    .lineLimit(1)
-                    }
                     
             // Content Preview (text only for photo entries)
             if !contentPreview.isEmpty {

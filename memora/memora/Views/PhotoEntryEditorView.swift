@@ -42,6 +42,7 @@ struct PhotoEntryEditorView: View {
     @State private var isLoadingAI = false
     @State private var showingAILimitAlert = false
     @State private var showingAPIKeyAlert = false
+    @State private var showingNoPhotosAlert = false
     @State private var usedAI = false
     
     @StateObject private var aiService = AIService()
@@ -199,32 +200,41 @@ struct PhotoEntryEditorView: View {
                             
                             Spacer()
                             
-                            // AI Button (Inline with label)
-                            if !loadedImages.isEmpty {
-                                Button(action: content.isEmpty ? generateCaption : improveWithAI) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: (isGeneratingCaption || isLoadingAI) ? "arrow.clockwise" : "sparkles")
-                                            .font(.caption)
-                                        Text((isGeneratingCaption || isLoadingAI) ? 
-                                             (content.isEmpty ? "Generating..." : "Improving...") : 
-                                             (content.isEmpty ? "Generate with AI" : "Improve with AI"))
-                                            .font(.caption)
-                                            .fontWeight(.semibold)
+                            // AI Button (Inline with label) - Always visible
+                            Button(action: {
+                                if content.isEmpty {
+                                    // Check if photos exist before generating
+                                    if loadedImages.isEmpty {
+                                        showingNoPhotosAlert = true
+                                    } else {
+                                        generateCaption()
                                     }
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(
-                                        LinearGradient(
-                                            colors: [.purple, .blue],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                    .cornerRadius(8)
+                                } else {
+                                    improveWithAI()
                                 }
-                                .disabled(isGeneratingCaption || isLoadingAI)
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: (isGeneratingCaption || isLoadingAI) ? "arrow.clockwise" : "sparkles")
+                                        .font(.caption)
+                                    Text((isGeneratingCaption || isLoadingAI) ? 
+                                         (content.isEmpty ? "Generating..." : "Improving...") : 
+                                         (content.isEmpty ? "Generate with AI" : "Improve with AI"))
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    LinearGradient(
+                                        colors: [.purple, .blue],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(8)
                             }
+                            .disabled(isGeneratingCaption || isLoadingAI)
                         }
                         
                         ZStack(alignment: .topLeading) {
@@ -479,6 +489,11 @@ struct PhotoEntryEditorView: View {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text("Please configure your OpenAI API key in Settings to use AI features.")
+            }
+            .alert("No Photos Added", isPresented: $showingNoPhotosAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Please add or take a photo first before generating a caption with AI.")
             }
         }
     }
