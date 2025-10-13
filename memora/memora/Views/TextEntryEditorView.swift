@@ -86,14 +86,15 @@ struct TextEntryEditorView: View {
                                 .fontWeight(.semibold)
                                 .foregroundColor(.primary)
                             
-                            TextField("Give your entry a title...", text: $title)
-                                .font(.body)
-                                .padding(12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(.systemBackground))
-                                        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
-                                )
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemBackground))
+                                    .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                                
+                                TextField("Give your entry a title...", text: $title)
+                                    .font(.body)
+                                    .padding(12)
+                            }
                         }
                     }
                     
@@ -200,18 +201,19 @@ struct TextEntryEditorView: View {
                             .disabled(isFetchingLocation)
                         }
                         
-                        TextField("Where are you?", text: $locationSearch.searchQuery)
-                            .font(.body)
-                            .padding(12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(.systemBackground))
-                                    .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
-                            )
-                            .onChange(of: locationSearch.searchQuery) { newValue in
-                                location = newValue
-                                showingLocationSuggestions = !newValue.isEmpty && !locationSearch.suggestions.isEmpty
-                            }
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                            
+                            TextField("Where are you?", text: $locationSearch.searchQuery)
+                                .font(.body)
+                                .padding(12)
+                                .onChange(of: locationSearch.searchQuery) { newValue in
+                                    location = newValue
+                                    showingLocationSuggestions = !newValue.isEmpty && !locationSearch.suggestions.isEmpty
+                                }
+                        }
                         
                         // Location suggestions
                         if showingLocationSuggestions && !locationSearch.suggestions.isEmpty {
@@ -266,20 +268,21 @@ struct TextEntryEditorView: View {
                         }
                         
                         HStack(spacing: 8) {
-                            TextField("Add a tag...", text: $newTag)
-                                .font(.body)
-                                .padding(12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(.systemBackground))
-                                        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
-                                )
-                                .onSubmit {
-                                    if !newTag.isEmpty && !tags.contains(newTag) {
-                                        tags.append(newTag)
-                                        newTag = ""
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemBackground))
+                                    .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+                                
+                                TextField("Add a tag...", text: $newTag)
+                                    .font(.body)
+                                    .padding(12)
+                                    .onSubmit {
+                                        if !newTag.isEmpty && !tags.contains(newTag) {
+                                            tags.append(newTag)
+                                            newTag = ""
+                                        }
                                     }
-                                }
+                            }
                             
                             Button(action: {
                                 if !newTag.isEmpty && !tags.contains(newTag) {
