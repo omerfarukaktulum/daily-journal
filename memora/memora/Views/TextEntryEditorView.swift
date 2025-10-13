@@ -28,6 +28,7 @@ struct TextEntryEditorView: View {
     @State private var location: String = ""
     @State private var isFetchingLocation = false
     @State private var showingLocationSuggestions = false
+    @State private var selectedDate: Date = Date() // Date picker for entries
     
     @StateObject private var locationSearch = LocationSearchService()
     @State private var showingAIImprovement = false
@@ -43,9 +44,25 @@ struct TextEntryEditorView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    // Date Picker
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Date")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        DatePicker(
+                            "",
+                            selection: $selectedDate,
+                            in: ...Date(),
+                            displayedComponents: [.date]
+                        )
+                        .datePickerStyle(.compact)
+                        .labelsHidden()
+                    }
+                    
                     // Title
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Title (Optional)")
+                        Text("Title")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
@@ -72,27 +89,25 @@ struct TextEntryEditorView: View {
                     }
                     
                     // AI Improve Button
-                    if !content.isEmpty {
-                        Button(action: improveWithAI) {
-                            HStack {
-                                Image(systemName: "sparkles")
-                                Text(isLoadingAI ? "Improving..." : "Improve with AI")
-                                    .fontWeight(.semibold)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                LinearGradient(
-                                    colors: [.purple, .blue],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
+                    Button(action: improveWithAI) {
+                        HStack {
+                            Image(systemName: "sparkles")
+                            Text(isLoadingAI ? "Improving..." : "Improve with AI")
+                                .fontWeight(.semibold)
                         }
-                        .disabled(isLoadingAI)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            LinearGradient(
+                                colors: content.isEmpty ? [.gray.opacity(0.5), .gray.opacity(0.5)] : [.purple, .blue],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
                     }
+                    .disabled(isLoadingAI || content.isEmpty)
                     
                     // Mood Picker
                     VStack(alignment: .leading, spacing: 8) {
@@ -116,7 +131,7 @@ struct TextEntryEditorView: View {
                     // Location
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Location (Optional)")
+                            Text("Location")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             
@@ -375,6 +390,7 @@ struct TextEntryEditorView: View {
             journalMode: appState.journalMode
         )
         
+        entry.createdAt = selectedDate // Use selected date
         entry.title = title.isEmpty ? nil : title
         entry.mood = mood.isEmpty ? nil : mood
         entry.location = location.isEmpty ? nil : location
