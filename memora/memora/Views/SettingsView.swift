@@ -917,7 +917,7 @@ struct PremiumUpgradeView: View {
                     
                     // Features
                     VStack(alignment: .leading, spacing: 20) {
-                        FeatureRow(icon: "sparkles", title: "Unlimited AI Improvements", description: "No daily limits on AI features")
+                        FeatureRow(icon: "sparkles", title: "3 AI Improvements Per Day", description: "Daily refreshed AI features")
                         FeatureRow(icon: "mic.fill", title: "Voice Transcription", description: "Advanced speech-to-text for all entries")
                         FeatureRow(icon: "paintbrush.fill", title: "Premium Themes", description: "Beautiful custom journal themes")
                         FeatureRow(icon: "book.closed.fill", title: "Multiple Journals", description: "Create unlimited separate journals")

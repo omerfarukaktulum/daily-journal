@@ -54,11 +54,16 @@ class AppState: ObservableObject {
         self.aiUsageCount = UserDefaults.standard.integer(forKey: "aiUsageCount")
         self.lastResetDate = UserDefaults.standard.object(forKey: "lastResetDate") as? Date ?? Date()
         
-        // Reset AI usage count daily for free users
-        resetDailyUsageIfNeeded()
+        // Reset AI usage count daily for PREMIUM users only
+        if isPremiumUser {
+            resetDailyUsageIfNeeded()
+        }
     }
     
     func resetDailyUsageIfNeeded() {
+        // Only reset for premium users
+        guard isPremiumUser else { return }
+        
         let calendar = Calendar.current
         if !calendar.isDateInToday(lastResetDate) {
             aiUsageCount = 0
@@ -67,14 +72,16 @@ class AppState: ObservableObject {
     }
     
     func canUseAI() -> Bool {
-        resetDailyUsageIfNeeded()
-        return isPremiumUser || aiUsageCount < 5
+        if isPremiumUser {
+            resetDailyUsageIfNeeded()
+            return aiUsageCount < 3  // Premium: 3 per day
+        } else {
+            return aiUsageCount < 5  // Free: 5 total (lifetime)
+        }
     }
     
     func incrementAIUsage() {
-        if !isPremiumUser {
-            aiUsageCount += 1
-        }
+        aiUsageCount += 1
     }
 }
 

@@ -369,7 +369,9 @@ struct TextEntryEditorView: View {
                     // Navigate to premium subscription
                 }
             } message: {
-                Text("You've used all 5 free AI improvements for today. Upgrade to Premium for unlimited AI features!")
+                Text(appState.isPremiumUser ? 
+                     "You've used all 3 AI improvements for today. Come back tomorrow!" :
+                     "You've used all 5 free AI improvements. Upgrade to Premium for 3 AI uses per day!")
             }
             .alert("OpenAI API Key Required", isPresented: $showingAPIKeyAlert) {
                 TextField("Enter your OpenAI API key", text: $apiKeyInput)
