@@ -245,7 +245,11 @@ struct HomeView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 15) {
                     ForEach(memoriesFromThisDay.prefix(5), id: \.id) { entry in
-                        NavigationLink(destination: EntryDetailView(entry: entry)) {
+                        NavigationLink(destination: EntryDetailView(entry: entry, onDelete: {
+                            // Handle deletion from home view
+                            // The entry will be deleted from Core Data
+                            // and the home view will refresh automatically
+                        })) {
                             MemoryCard(entry: entry)
                         }
                         .buttonStyle(PlainButtonStyle())

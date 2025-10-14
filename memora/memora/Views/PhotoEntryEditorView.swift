@@ -1,4 +1,4 @@
- //
+//
 //  PhotoEntryEditorView.swift
 //  Memora
 //
@@ -136,28 +136,28 @@ struct PhotoEntryEditorView: View {
                         .disabled(isSimulator())
                         
                         // Choose from Library Button
-                        PhotosPicker(
-                            selection: $selectedPhotos,
+                    PhotosPicker(
+                        selection: $selectedPhotos,
                             maxSelectionCount: 10,
-                            matching: .images
-                        ) {
+                        matching: .images
+                    ) {
                             VStack(spacing: 10) {
-                                Image(systemName: "photo.on.rectangle.angled")
+                            Image(systemName: "photo.on.rectangle.angled")
                                     .font(.system(size: 40))
-                                    .foregroundColor(.purple)
-                                
+                                .foregroundColor(.purple)
+                            
                                 Text(loadedImages.isEmpty ? "Add Photos" : "Add More")
                                     .font(.subheadline)
-                                    .foregroundColor(.purple)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 120)
-                            .background(
-                                RoundedRectangle(cornerRadius: 15)
-                                    .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [10]))
-                                    .foregroundColor(.purple.opacity(0.5))
-                            )
+                                .foregroundColor(.purple)
                         }
+                        .frame(maxWidth: .infinity)
+                            .frame(height: 120)
+                        .background(
+                            RoundedRectangle(cornerRadius: 15)
+                                .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [10]))
+                                .foregroundColor(.purple.opacity(0.5))
+                        )
+                    }
                     }
                     .onChange(of: selectedPhotos) { _ in
                         loadPhotos()
@@ -341,7 +341,7 @@ struct PhotoEntryEditorView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Tags")
                             .font(.callout)
-                            .fontWeight(.semibold)
+                                    .fontWeight(.semibold)
                             .foregroundColor(.primary)
                         
                         if !tags.isEmpty {
@@ -387,11 +387,11 @@ struct PhotoEntryEditorView: View {
                         
                         // Tag Suggestions
                         if !suggestedTags.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 8) {
                                 Text("Suggested")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
-                                
+                            .foregroundColor(.secondary)
+                        
                                 FlowLayout(spacing: 8) {
                                     ForEach(suggestedTags, id: \.self) { tag in
                                         SuggestedTagChip(text: tag, isAdded: tags.contains(tag)) {
