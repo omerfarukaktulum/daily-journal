@@ -247,8 +247,14 @@ struct HomeView: View {
                     ForEach(memoriesFromThisDay.prefix(5), id: \.id) { entry in
                         NavigationLink(destination: EntryDetailView(entry: entry, onDelete: {
                             // Handle deletion from home view
-                            // The entry will be deleted from Core Data
-                            // and the home view will refresh automatically
+                            // Delete the entry immediately
+                            managedObjectContext.delete(entry)
+                            
+                            do {
+                                try managedObjectContext.save()
+                            } catch {
+                                print("Failed to delete entry: \(error)")
+                            }
                         })) {
                             MemoryCard(entry: entry)
                         }

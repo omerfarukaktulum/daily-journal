@@ -233,15 +233,13 @@ struct BookView: View {
                         showingEntryDetail = false
                         selectedEntry = nil
                         
-                        // Delete after sheet dismisses
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            managedObjectContext.delete(entry)
-                            
-                            do {
-                                try managedObjectContext.save()
-                            } catch {
-                                print("Failed to delete entry: \(error)")
-                            }
+                        // Delete immediately but safely
+                        managedObjectContext.delete(entry)
+                        
+                        do {
+                            try managedObjectContext.save()
+                        } catch {
+                            print("Failed to delete entry: \(error)")
                         }
                     })
                 }
