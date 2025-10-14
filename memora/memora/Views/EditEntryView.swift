@@ -205,7 +205,7 @@ struct EditEntryView: View {
                         saveChanges()
                     }
                     .font(.body.bold())
-                    .tint(.purple)
+                    .foregroundColor(.purple)
                     .disabled(content.isEmpty)
                 }
                 

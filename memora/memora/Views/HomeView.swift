@@ -247,13 +247,15 @@ struct HomeView: View {
                     ForEach(memoriesFromThisDay.prefix(5), id: \.id) { entry in
                         NavigationLink(destination: EntryDetailView(entry: entry, onDelete: {
                             // Handle deletion from home view
-                            // Delete the entry immediately
-                            managedObjectContext.delete(entry)
-                            
-                            do {
-                                try managedObjectContext.save()
-                            } catch {
-                                print("Failed to delete entry: \(error)")
+                            // Delete after a brief delay to ensure navigation completes
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                managedObjectContext.delete(entry)
+                                
+                                do {
+                                    try managedObjectContext.save()
+                                } catch {
+                                    print("Failed to delete entry: \(error)")
+                                }
                             }
                         })) {
                             MemoryCard(entry: entry)

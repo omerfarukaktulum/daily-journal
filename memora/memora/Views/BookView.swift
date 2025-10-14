@@ -230,16 +230,19 @@ struct BookView: View {
                 if let entry = selectedEntry {
                     EntryDetailView(entry: entry, onDelete: {
                         // Handle deletion from parent
+                        // First dismiss the sheet
                         showingEntryDetail = false
                         selectedEntry = nil
                         
-                        // Delete immediately but safely
-                        managedObjectContext.delete(entry)
-                        
-                        do {
-                            try managedObjectContext.save()
-                        } catch {
-                            print("Failed to delete entry: \(error)")
+                        // Then delete after a brief delay to ensure sheet is dismissed
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            managedObjectContext.delete(entry)
+                            
+                            do {
+                                try managedObjectContext.save()
+                            } catch {
+                                print("Failed to delete entry: \(error)")
+                            }
                         }
                     })
                 }
