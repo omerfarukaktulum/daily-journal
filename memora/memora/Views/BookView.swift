@@ -230,16 +230,25 @@ struct BookView: View {
                 if let entry = selectedEntry {
                     EntryDetailView(entry: entry, onDelete: {
                         // Handle deletion from parent
+                        // Store entry ID before dismissing
+                        let entryID = entry.id
+                        
                         // First dismiss the sheet
                         showingEntryDetail = false
                         selectedEntry = nil
                         
                         // Then delete after a brief delay to ensure sheet is dismissed
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            managedObjectContext.delete(entry)
+                            // Find the entry by ID to avoid reference issues
+                            let fetchRequest: NSFetchRequest<DiaryEntry> = DiaryEntry.fetchRequest()
+                            fetchRequest.predicate = NSPredicate(format: "id == %@", entryID as CVarArg)
                             
                             do {
-                                try managedObjectContext.save()
+                                let entries = try managedObjectContext.fetch(fetchRequest)
+                                if let entryToDelete = entries.first {
+                                    managedObjectContext.delete(entryToDelete)
+                                    try managedObjectContext.save()
+                                }
                             } catch {
                                 print("Failed to delete entry: \(error)")
                             }

@@ -247,12 +247,21 @@ struct HomeView: View {
                     ForEach(memoriesFromThisDay.prefix(5), id: \.id) { entry in
                         NavigationLink(destination: EntryDetailView(entry: entry, onDelete: {
                             // Handle deletion from home view
+                            // Store entry ID before deletion
+                            let entryID = entry.id
+                            
                             // Delete after a brief delay to ensure navigation completes
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                managedObjectContext.delete(entry)
+                                // Find the entry by ID to avoid reference issues
+                                let fetchRequest: NSFetchRequest<DiaryEntry> = DiaryEntry.fetchRequest()
+                                fetchRequest.predicate = NSPredicate(format: "id == %@", entryID as CVarArg)
                                 
                                 do {
-                                    try managedObjectContext.save()
+                                    let entries = try managedObjectContext.fetch(fetchRequest)
+                                    if let entryToDelete = entries.first {
+                                        managedObjectContext.delete(entryToDelete)
+                                        try managedObjectContext.save()
+                                    }
                                 } catch {
                                     print("Failed to delete entry: \(error)")
                                 }
