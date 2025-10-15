@@ -7,36 +7,81 @@ class StripeService: ObservableObject {
     @Published var errorMessage: String?
     
     private let publishableKey = "pk_test_51QejagQBQrhHPXtCwr1r1MVXRwc3DTDQDl3a8jmrmuooFdekdft48GPXSArPN0zTfkjte3hXL5Ee3ChLNlFeVDBY00ao2NdQ3w"
-    private let baseURL = "https://api.stripe.com/v1"
+    private let backendURL = "http://localhost:3000" // Change to your deployed backend URL
     
-    // MARK: - Create Payment Intent (Client-side approach)
-    func createPaymentIntent(amount: Int, currency: String = "usd") async throws -> String {
+    // MARK: - Create Payment Intent (Real Backend Implementation)
+    func createPaymentIntent(amount: Int, currency: String = "usd", plan: String = "monthly") async throws -> String {
         isLoading = true
         errorMessage = nil
         
         defer { isLoading = false }
         
-        // For now, we'll create a mock payment intent since we need a backend
-        // In production, this should call your backend server which uses the secret key
-        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second delay
+        guard let url = URL(string: "\(backendURL)/api/create-payment-intent") else {
+            throw StripeError.invalidURL
+        }
         
-        // Mock payment intent - in production, this would come from your backend
-        return "pi_mock_\(UUID().uuidString)"
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let requestBody = [
+            "amount": amount,
+            "currency": currency,
+            "plan": plan
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw StripeError.invalidResponse
+        }
+        
+        if httpResponse.statusCode != 200 {
+            let errorData = try JSONDecoder().decode(BackendErrorResponse.self, from: data)
+            throw StripeError.requestFailed(errorData.error)
+        }
+        
+        let result = try JSONDecoder().decode(PaymentIntentResponse.self, from: data)
+        return result.clientSecret
     }
     
-    // MARK: - Confirm Payment (Mock implementation for now)
+    // MARK: - Confirm Payment (Real Backend Implementation)
     func confirmPayment(clientSecret: String, paymentMethodId: String) async throws -> Bool {
         isLoading = true
         errorMessage = nil
         
         defer { isLoading = false }
         
-        // Simulate payment processing
-        try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+        guard let url = URL(string: "\(backendURL)/api/confirm-payment") else {
+            throw StripeError.invalidURL
+        }
         
-        // Mock successful payment - in production, this would call your backend
-        // which would use the secret key to confirm the payment with Stripe
-        return true
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let requestBody = [
+            "paymentIntentId": clientSecret,
+            "paymentMethodId": paymentMethodId
+        ]
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw StripeError.invalidResponse
+        }
+        
+        if httpResponse.statusCode != 200 {
+            let errorData = try JSONDecoder().decode(BackendErrorResponse.self, from: data)
+            throw StripeError.paymentFailed(errorData.error)
+        }
+        
+        let result = try JSONDecoder().decode(PaymentConfirmationResponse.self, from: data)
+        return result.success && result.status == "succeeded"
     }
 }
 
@@ -83,6 +128,24 @@ struct StripeErrorResponse: Codable {
 struct StripeErrorDetail: Codable {
     let message: String
     let type: String
+}
+
+// MARK: - Backend Response Models
+struct PaymentIntentResponse: Codable {
+    let success: Bool
+    let clientSecret: String
+    let paymentIntentId: String
+}
+
+struct PaymentConfirmationResponse: Codable {
+    let success: Bool
+    let status: String
+    let paymentIntentId: String
+}
+
+struct BackendErrorResponse: Codable {
+    let success: Bool
+    let error: String
 }
 
 // MARK: - Premium Plans

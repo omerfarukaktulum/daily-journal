@@ -202,9 +202,9 @@ struct StripePaymentSheet: View {
                                 .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
                         )
                         
-                        Text("Demo Mode - Backend integration required for real payments")
+                        Text("Real Stripe Integration - Backend Server Required")
                             .font(.caption)
-                            .foregroundColor(.orange)
+                            .foregroundColor(.blue)
                             .padding(.horizontal)
                         
                         Button(action: {
@@ -223,7 +223,7 @@ struct StripePaymentSheet: View {
                                 }
                             }
                         }) {
-                            Text("Complete Payment (Demo)")
+                            Text("Complete Payment")
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -246,7 +246,8 @@ struct StripePaymentSheet: View {
                                 do {
                                     clientSecret = try await stripeService.createPaymentIntent(
                                         amount: plan.price,
-                                        currency: "usd"
+                                        currency: "usd",
+                                        plan: plan.rawValue
                                     )
                                 } catch {
                                     print("Error creating payment intent: \(error)")
