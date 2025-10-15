@@ -915,21 +915,21 @@ struct PremiumUpgradeView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 30) {
+                VStack(spacing: 20) {
                     // Header
-                    VStack(spacing: 15) {
+                    VStack(spacing: 12) {
                         Image(systemName: "crown.fill")
-                            .font(.system(size: 60))
+                            .font(.system(size: 50))
                             .foregroundColor(.yellow)
                         
                         Text("Upgrade to Premium")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
                         
                         Text("Unlock the full power of Memora")
-                            .font(.body)
+                            .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
-                    .padding(.top, 40)
+                    .padding(.top, 20)
                     
                     // Limit Reached Message
                     VStack(spacing: 12) {
@@ -964,32 +964,46 @@ struct PremiumUpgradeView: View {
                     }
                     .padding(.horizontal)
                     
-                    // Features
-                    VStack(alignment: .leading, spacing: 20) {
-                        FeatureRow(icon: "sparkles", title: "3 AI Improvements Per Day", description: "Daily refreshed AI features")
-                        FeatureRow(icon: "mic.fill", title: "Voice Transcription", description: "Advanced speech-to-text for all entries")
-                        FeatureRow(icon: "paintbrush.fill", title: "Premium Themes", description: "Beautiful custom journal themes")
-                        FeatureRow(icon: "book.closed.fill", title: "Multiple Journals", description: "Create unlimited separate journals")
-                        FeatureRow(icon: "chart.line.uptrend.xyaxis", title: "Advanced Analytics", description: "Deep insights into your journaling")
+                    // Features (Compact)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Premium Features")
+                            .font(.headline)
+                            .padding(.horizontal)
+                        
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 12) {
+                            CompactFeatureCard(icon: "sparkles", title: "3 AI Daily", description: "Daily AI features")
+                            CompactFeatureCard(icon: "mic.fill", title: "Voice AI", description: "Speech-to-text")
+                            CompactFeatureCard(icon: "paintbrush.fill", title: "Themes", description: "Custom designs")
+                            CompactFeatureCard(icon: "chart.line.uptrend.xyaxis", title: "Analytics", description: "Deep insights")
+                        }
                     }
                     .padding(.horizontal)
                     
-                    // Pricing
-                    VStack(spacing: 15) {
-                        PricingCard(
-                            title: "Monthly",
-                            price: "$4.99",
-                            period: "per month",
-                            isRecommended: false
-                        )
+                    // Pricing (Horizontal)
+                    VStack(spacing: 12) {
+                        Text("Choose Your Plan")
+                            .font(.headline)
+                            .padding(.horizontal)
                         
-                        PricingCard(
-                            title: "Yearly",
-                            price: "$39.99",
-                            period: "per year",
-                            savings: "Save 33%",
-                            isRecommended: true
-                        )
+                        HStack(spacing: 12) {
+                            PricingCard(
+                                title: "Monthly",
+                                price: "$4.99",
+                                period: "per month",
+                                isRecommended: false
+                            )
+                            
+                            PricingCard(
+                                title: "Yearly",
+                                price: "$39.99",
+                                period: "per year",
+                                savings: "Save 33%",
+                                isRecommended: true
+                            )
+                        }
                     }
                     .padding(.horizontal)
                     
@@ -1196,6 +1210,44 @@ struct SettingsRow: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .contentShape(Rectangle())
+    }
+}
+
+struct CompactFeatureCard: View {
+    let icon: String
+    let title: String
+    let description: String
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .fill(Color.purple.opacity(0.1))
+                    .frame(width: 40, height: 40)
+                
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundColor(.purple)
+            }
+            
+            VStack(spacing: 2) {
+                Text(title)
+                    .font(.caption.bold())
+                    .foregroundColor(.primary)
+                
+                Text(description)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+        )
     }
 }
 
