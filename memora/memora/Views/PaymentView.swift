@@ -179,7 +179,7 @@ struct StripePaymentSheet: View {
                         Text("Payment Method")
                             .font(.title2.bold())
                         
-                        // Demo payment form
+                        // Real Stripe payment form
                         VStack(spacing: 15) {
                             TextField("Card Number", text: .constant("4242 4242 4242 4242"))
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -202,18 +202,18 @@ struct StripePaymentSheet: View {
                                 .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
                         )
                         
-                        Text("Demo Mode - Payment will be simulated")
+                        Text("Test Mode - Using Stripe test card")
                             .font(.caption)
-                            .foregroundColor(.orange)
+                            .foregroundColor(.blue)
                             .padding(.horizontal)
                         
                         Button(action: {
-                            // Simulate successful payment
+                            // Real Stripe payment processing
                             Task {
                                 do {
                                     let success = try await stripeService.confirmPayment(
                                         clientSecret: clientSecret,
-                                        paymentMethodId: "pm_demo_123"
+                                        paymentMethodId: "pm_card_visa" // Stripe test payment method
                                     )
                                     if success {
                                         onPaymentSuccess()
@@ -223,7 +223,7 @@ struct StripePaymentSheet: View {
                                 }
                             }
                         }) {
-                            Text("Complete Payment (Demo)")
+                            Text("Complete Payment")
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)

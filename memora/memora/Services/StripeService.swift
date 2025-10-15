@@ -6,33 +6,75 @@ class StripeService: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    // MARK: - Create Payment Intent (Mock Implementation)
+    private let publishableKey = "pk_test_51QejagQBQrhHPXtCwr1r1MVXRwc3DTDQDl3a8jmrmuooFdekdft48GPXSArPN0zTfkjte3hXL5Ee3ChLNlFeVDBY00ao2NdQ3w"
+    private let baseURL = "https://api.stripe.com/v1"
+    
+    // MARK: - Create Payment Intent (Real Stripe Implementation)
     func createPaymentIntent(amount: Int, currency: String = "usd") async throws -> String {
         isLoading = true
         errorMessage = nil
         
-        // Simulate network delay
-        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-        
         defer { isLoading = false }
         
-        // Mock successful payment intent creation
-        return "pi_mock_\(UUID().uuidString)"
+        guard let url = URL(string: "\(baseURL)/payment_intents") else {
+            throw StripeError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(publishableKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        
+        let body = "amount=\(amount)&currency=\(currency)&automatic_payment_methods[enabled]=true&metadata[app]=memora"
+        request.httpBody = body.data(using: .utf8)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw StripeError.invalidResponse
+        }
+        
+        if httpResponse.statusCode != 200 {
+            let errorData = try JSONDecoder().decode(StripeErrorResponse.self, from: data)
+            throw StripeError.requestFailed(errorData.error.message)
+        }
+        
+        let paymentIntent = try JSONDecoder().decode(StripePaymentIntent.self, from: data)
+        return paymentIntent.clientSecret
     }
     
-    // MARK: - Confirm Payment (Mock Implementation)
+    // MARK: - Confirm Payment (Real Stripe Implementation)
     func confirmPayment(clientSecret: String, paymentMethodId: String) async throws -> Bool {
         isLoading = true
         errorMessage = nil
         
-        // Simulate network delay
-        try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-        
         defer { isLoading = false }
         
-        // Mock successful payment confirmation
-        // In a real implementation, this would call Stripe's API
-        return true
+        guard let url = URL(string: "\(baseURL)/payment_intents/\(clientSecret)/confirm") else {
+            throw StripeError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(publishableKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        
+        let body = "payment_method=\(paymentMethodId)"
+        request.httpBody = body.data(using: .utf8)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw StripeError.invalidResponse
+        }
+        
+        if httpResponse.statusCode != 200 {
+            let errorData = try JSONDecoder().decode(StripeErrorResponse.self, from: data)
+            throw StripeError.paymentFailed(errorData.error.message)
+        }
+        
+        let result = try JSONDecoder().decode(StripePaymentResult.self, from: data)
+        return result.status == "succeeded"
     }
 }
 
@@ -54,22 +96,31 @@ struct StripePaymentResult: Codable {
 
 enum StripeError: LocalizedError {
     case invalidURL
-    case requestFailed
-    case paymentFailed
+    case requestFailed(String)
+    case paymentFailed(String)
     case invalidResponse
     
     var errorDescription: String? {
         switch self {
         case .invalidURL:
             return "Invalid URL"
-        case .requestFailed:
-            return "Request failed"
-        case .paymentFailed:
-            return "Payment failed"
+        case .requestFailed(let message):
+            return "Request failed: \(message)"
+        case .paymentFailed(let message):
+            return "Payment failed: \(message)"
         case .invalidResponse:
             return "Invalid response"
         }
     }
+}
+
+struct StripeErrorResponse: Codable {
+    let error: StripeErrorDetail
+}
+
+struct StripeErrorDetail: Codable {
+    let message: String
+    let type: String
 }
 
 // MARK: - Premium Plans
