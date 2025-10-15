@@ -24,7 +24,7 @@ class StripeService: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        let requestBody = [
+        let requestBody: [String: Any] = [
             "amount": amount,
             "currency": currency,
             "plan": plan
@@ -62,7 +62,7 @@ class StripeService: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        let requestBody = [
+        let requestBody: [String: Any] = [
             "paymentIntentId": clientSecret,
             "paymentMethodId": paymentMethodId
         ]
