@@ -911,6 +911,8 @@ struct FAQCard: View {
 struct PremiumUpgradeView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appState: AppState
+    @State private var selectedPlan: PremiumPlan = .yearly
+    @State private var showingPayment = false
     
     var body: some View {
         NavigationStack {
@@ -976,26 +978,30 @@ struct PremiumUpgradeView: View {
                             title: "Monthly",
                             price: "$4.99",
                             period: "per month",
-                            isRecommended: false
+                            isRecommended: selectedPlan == .monthly
                         )
+                        .onTapGesture {
+                            selectedPlan = .monthly
+                        }
                         
                         PricingCard(
                             title: "Yearly",
                             price: "$39.99",
                             period: "per year",
                             savings: "Save 33%",
-                            isRecommended: true
+                            isRecommended: selectedPlan == .yearly
                         )
+                        .onTapGesture {
+                            selectedPlan = .yearly
+                        }
                     }
                     .padding(.horizontal)
                     
                     // Subscribe Button
                     Button(action: {
-                        // In production, implement StoreKit purchase flow
-                        appState.isPremiumUser = true
-                        dismiss()
+                        showingPayment = true
                     }) {
-                        Text("Start 14-Day Free Trial")
+                        Text("Upgrade to Premium")
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -1011,7 +1017,7 @@ struct PremiumUpgradeView: View {
                     }
                     .padding(.horizontal)
                     
-                    Text("Cancel anytime. No commitment.")
+                    Text("Secure payment powered by Stripe")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
@@ -1031,6 +1037,9 @@ struct PremiumUpgradeView: View {
                         dismiss()
                     }
                 }
+            }
+            .sheet(isPresented: $showingPayment) {
+                PaymentView(plan: selectedPlan)
             }
         }
     }
