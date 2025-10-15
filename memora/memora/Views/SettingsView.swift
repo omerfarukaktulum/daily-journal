@@ -918,18 +918,18 @@ struct PremiumUpgradeView: View {
                 VStack(spacing: 30) {
                     // Header
                     VStack(spacing: 15) {
+                        Text("Upgrade to Premium")
+                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                        
                         Image(systemName: "crown.fill")
                             .font(.system(size: 60))
                             .foregroundColor(.yellow)
-                        
-                        Text("Upgrade to Premium")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
                         
                         Text("Unlock the full power of Memora")
                             .font(.body)
                             .foregroundColor(.secondary)
                     }
-                    .padding(.top, 40)
+                    .padding(.top, 20)
                     
                     // Limit Reached Message
                     VStack(spacing: 12) {
