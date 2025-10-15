@@ -915,21 +915,18 @@ struct PremiumUpgradeView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 30) {
+                VStack(spacing: 20) {
                     // Header
-                    VStack(spacing: 15) {
-                        // Text("Upgrade to Premium")
-                        //     .font(.system(size: 32, weight: .bold, design: .rounded))
-                        
+                    VStack(spacing: 8) {
                         Image(systemName: "crown.fill")
-                            .font(.system(size: 60))
+                            .font(.system(size: 50))
                             .foregroundColor(.yellow)
                         
                         Text("Unlock the full power of Memora")
-                            .font(.body)
+                            .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
-                    .padding(.top, 20)
+                    .padding(.top, 10)
                     
                     // Limit Reached Message
                     // VStack(spacing: 12) {
@@ -965,7 +962,7 @@ struct PremiumUpgradeView: View {
                     // .padding(.horizontal)
                     
                     // Features
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 12) {
                         FeatureRow(icon: "sparkles", title: "3 AI Improvements Per Day", description: "Daily refreshed AI features")
                         FeatureRow(icon: "mic.fill", title: "Voice Transcription", description: "Advanced speech-to-text for all entries")
                         FeatureRow(icon: "paintbrush.fill", title: "Premium Themes", description: "Beautiful custom journal themes")
@@ -974,7 +971,7 @@ struct PremiumUpgradeView: View {
                     .padding(.horizontal)
                     
                     // Pricing
-                    VStack(spacing: 15) {
+                    VStack(spacing: 10) {
                         PricingCard(
                             title: "Monthly",
                             price: "$4.99",
