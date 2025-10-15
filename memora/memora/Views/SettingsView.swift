@@ -918,8 +918,8 @@ struct PremiumUpgradeView: View {
                 VStack(spacing: 30) {
                     // Header
                     VStack(spacing: 15) {
-                        Text("Upgrade to Premium")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                        // Text("Upgrade to Premium")
+                        //     .font(.system(size: 32, weight: .bold, design: .rounded))
                         
                         Image(systemName: "crown.fill")
                             .font(.system(size: 60))
@@ -969,6 +969,7 @@ struct PremiumUpgradeView: View {
                         FeatureRow(icon: "sparkles", title: "3 AI Improvements Per Day", description: "Daily refreshed AI features")
                         FeatureRow(icon: "mic.fill", title: "Voice Transcription", description: "Advanced speech-to-text for all entries")
                         FeatureRow(icon: "paintbrush.fill", title: "Premium Themes", description: "Beautiful custom journal themes")
+                        FeatureRow(icon: "chart.line.uptrend.xyaxis", title: "Advanced Analytics", description: "Deep insights into your journaling")
                     }
                     .padding(.horizontal)
                     
