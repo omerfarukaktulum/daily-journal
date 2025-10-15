@@ -932,45 +932,43 @@ struct PremiumUpgradeView: View {
                     .padding(.top, 20)
                     
                     // Limit Reached Message
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.title2)
-                                .foregroundColor(.orange)
+                    // VStack(spacing: 12) {
+                    //     HStack(spacing: 12) {
+                    //         Image(systemName: "exclamationmark.triangle.fill")
+                    //             .font(.title2)
+                    //             .foregroundColor(.orange)
                             
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("AI Limit Reached")
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
+                    //         VStack(alignment: .leading, spacing: 4) {
+                    //             Text("AI Limit Reached")
+                    //                 .font(.headline)
+                    //                 .foregroundColor(.primary)
                                 
-                                Text(appState.isPremiumUser ? 
-                                     "You've used all 3 AI improvements for today. Come back tomorrow!" :
-                                     "You've used all 5 free AI improvements. Upgrade to Premium for 3 AI uses per day!")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
+                    //             Text(appState.isPremiumUser ? 
+                    //                  "You've used all 3 AI improvements for today. Come back tomorrow!" :
+                    //                  "You've used all 5 free AI improvements. Upgrade to Premium for 3 AI uses per day!")
+                    //                 .font(.subheadline)
+                    //                 .foregroundColor(.secondary)
+                    //         }
                             
-                            Spacer()
-                        }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(Color.orange.opacity(0.1))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 15)
-                                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
-                                )
-                        )
-                    }
-                    .padding(.horizontal)
+                    //         Spacer()
+                    //     }
+                    //     .padding()
+                    //     .background(
+                    //         RoundedRectangle(cornerRadius: 15)
+                    //             .fill(Color.orange.opacity(0.1))
+                    //             .overlay(
+                    //                 RoundedRectangle(cornerRadius: 15)
+                    //                     .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                    //             )
+                    //     )
+                    // }
+                    // .padding(.horizontal)
                     
                     // Features
                     VStack(alignment: .leading, spacing: 20) {
                         FeatureRow(icon: "sparkles", title: "3 AI Improvements Per Day", description: "Daily refreshed AI features")
                         FeatureRow(icon: "mic.fill", title: "Voice Transcription", description: "Advanced speech-to-text for all entries")
                         FeatureRow(icon: "paintbrush.fill", title: "Premium Themes", description: "Beautiful custom journal themes")
-                        FeatureRow(icon: "book.closed.fill", title: "Multiple Journals", description: "Create unlimited separate journals")
-                        FeatureRow(icon: "chart.line.uptrend.xyaxis", title: "Advanced Analytics", description: "Deep insights into your journaling")
                     }
                     .padding(.horizontal)
                     
