@@ -202,9 +202,9 @@ struct StripePaymentSheet: View {
                                 .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
                         )
                         
-                        Text("Real Stripe Integration - Backend Server Required")
+                        Text("Processing secure payment with Stripe")
                             .font(.caption)
-                            .foregroundColor(.blue)
+                            .foregroundColor(.green)
                             .padding(.horizontal)
                         
                         Button(action: {
@@ -220,6 +220,10 @@ struct StripePaymentSheet: View {
                                     }
                                 } catch {
                                     print("Payment error: \(error)")
+                                    // Show error to user
+                                    DispatchQueue.main.async {
+                                        stripeService.errorMessage = error.localizedDescription
+                                    }
                                 }
                             }
                         }) {
@@ -238,6 +242,14 @@ struct StripePaymentSheet: View {
                                 .cornerRadius(15)
                         }
                         .disabled(stripeService.isLoading)
+                        
+                        // Error Message
+                        if let errorMessage = stripeService.errorMessage {
+                            Text(errorMessage)
+                                .font(.caption)
+                                .foregroundColor(.red)
+                                .padding(.horizontal)
+                        }
                     }
                 } else {
                     ProgressView("Setting up payment...")
@@ -251,6 +263,10 @@ struct StripePaymentSheet: View {
                                     )
                                 } catch {
                                     print("Error creating payment intent: \(error)")
+                                    // Show error to user
+                                    DispatchQueue.main.async {
+                                        stripeService.errorMessage = error.localizedDescription
+                                    }
                                 }
                             }
                         }
