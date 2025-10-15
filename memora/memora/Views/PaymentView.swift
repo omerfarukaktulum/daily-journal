@@ -202,9 +202,9 @@ struct StripePaymentSheet: View {
                                 .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
                         )
                         
-                        Text("Test Mode - Using Stripe test card")
+                        Text("Demo Mode - Backend integration required for real payments")
                             .font(.caption)
-                            .foregroundColor(.blue)
+                            .foregroundColor(.orange)
                             .padding(.horizontal)
                         
                         Button(action: {
@@ -223,7 +223,7 @@ struct StripePaymentSheet: View {
                                 }
                             }
                         }) {
-                            Text("Complete Payment")
+                            Text("Complete Payment (Demo)")
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
