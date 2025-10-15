@@ -45,7 +45,7 @@ struct VoiceEntryRecorderView: View {
     @State private var showingAIImprovement = false
     @State private var aiSuggestions: [String] = []
     @State private var isLoadingAI = false
-    @State private var showingAILimitAlert = false
+    @State private var showingPremiumSheet = false
     @State private var usedAI = false // Track if AI was used
     
     @StateObject private var aiService = AIService()
@@ -496,15 +496,8 @@ struct VoiceEntryRecorderView: View {
                 showingAIImprovement = false
             }
         }
-        .alert("AI Limit Reached", isPresented: $showingAILimitAlert) {
-            Button("OK", role: .cancel) { }
-            Button("Upgrade to Premium") {
-                // Navigate to premium subscription
-            }
-        } message: {
-            Text(appState.isPremiumUser ? 
-                 "You've used all 3 AI improvements for today. Come back tomorrow!" :
-                 "You've used all 5 free AI improvements. Upgrade to Premium for 3 AI uses per day!")
+        .sheet(isPresented: $showingPremiumSheet) {
+            PremiumUpgradeView()
         }
         .sheet(isPresented: $showingDatePicker) {
             VStack(spacing: 0) {
@@ -652,7 +645,7 @@ struct VoiceEntryRecorderView: View {
     
     func improveWithAI() {
         guard appState.canUseAI() else {
-            showingAILimitAlert = true
+            showingPremiumSheet = true
             return
         }
         

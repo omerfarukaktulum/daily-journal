@@ -164,6 +164,22 @@ struct SettingsView: View {
                             .padding(.leading, 56)
                         
                         Button(action: {
+                            // Reset AI quota to 5 for testing
+                            appState.aiUsageCount = 0
+                        }) {
+                            SettingsRow(
+                                icon: "arrow.clockwise.circle.fill",
+                                iconColor: .blue,
+                                title: "Reset AI Quota (Testing)",
+                                subtitle: "Reset to 5 free uses"
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        Divider()
+                            .padding(.leading, 56)
+                        
+                        Button(action: {
                             // Implement data clearing
                         }) {
                             SettingsRow(
@@ -914,6 +930,39 @@ struct PremiumUpgradeView: View {
                             .foregroundColor(.secondary)
                     }
                     .padding(.top, 40)
+                    
+                    // Limit Reached Message
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.title2)
+                                .foregroundColor(.orange)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("AI Limit Reached")
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                
+                                Text(appState.isPremiumUser ? 
+                                     "You've used all 3 AI improvements for today. Come back tomorrow!" :
+                                     "You've used all 5 free AI improvements. Upgrade to Premium for 3 AI uses per day!")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(Color.orange.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 15)
+                                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                    }
+                    .padding(.horizontal)
                     
                     // Features
                     VStack(alignment: .leading, spacing: 20) {
