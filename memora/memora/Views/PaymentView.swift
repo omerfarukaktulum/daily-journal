@@ -1,5 +1,4 @@
 import SwiftUI
-import Stripe
 
 struct PaymentView: View {
     @Environment(\.dismiss) var dismiss
@@ -175,13 +174,12 @@ struct StripePaymentSheet: View {
         NavigationStack {
             VStack(spacing: 20) {
                 if let clientSecret = clientSecret {
-                    // Stripe Payment Element would go here
-                    // For now, showing a simplified version
+                    // Simplified payment form for demo
                     VStack(spacing: 20) {
                         Text("Payment Method")
                             .font(.title2.bold())
                         
-                        // Simplified payment form
+                        // Demo payment form
                         VStack(spacing: 15) {
                             TextField("Card Number", text: .constant("4242 4242 4242 4242"))
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -204,13 +202,18 @@ struct StripePaymentSheet: View {
                                 .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
                         )
                         
+                        Text("Demo Mode - Payment will be simulated")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                            .padding(.horizontal)
+                        
                         Button(action: {
                             // Simulate successful payment
                             Task {
                                 do {
                                     let success = try await stripeService.confirmPayment(
                                         clientSecret: clientSecret,
-                                        paymentMethodId: "pm_test_123"
+                                        paymentMethodId: "pm_demo_123"
                                     )
                                     if success {
                                         onPaymentSuccess()
@@ -220,7 +223,7 @@ struct StripePaymentSheet: View {
                                 }
                             }
                         }) {
-                            Text("Complete Payment")
+                            Text("Complete Payment (Demo)")
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)

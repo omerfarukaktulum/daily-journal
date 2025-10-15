@@ -6,73 +6,33 @@ class StripeService: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    private let publishableKey: String
-    private let baseURL = "https://api.stripe.com/v1"
-    
-    init() {
-        // In production, use your actual Stripe publishable key
-        // For now, using test key - replace with your actual key
-        self.publishableKey = "pk_test_your_stripe_publishable_key_here"
-    }
-    
-    // MARK: - Create Payment Intent
+    // MARK: - Create Payment Intent (Mock Implementation)
     func createPaymentIntent(amount: Int, currency: String = "usd") async throws -> String {
         isLoading = true
         errorMessage = nil
         
+        // Simulate network delay
+        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        
         defer { isLoading = false }
         
-        guard let url = URL(string: "\(baseURL)/payment_intents") else {
-            throw StripeError.invalidURL
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(publishableKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        
-        let body = "amount=\(amount)&currency=\(currency)&automatic_payment_methods[enabled]=true"
-        request.httpBody = body.data(using: .utf8)
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw StripeError.requestFailed
-        }
-        
-        let paymentIntent = try JSONDecoder().decode(StripePaymentIntent.self, from: data)
-        return paymentIntent.clientSecret
+        // Mock successful payment intent creation
+        return "pi_mock_\(UUID().uuidString)"
     }
     
-    // MARK: - Confirm Payment
+    // MARK: - Confirm Payment (Mock Implementation)
     func confirmPayment(clientSecret: String, paymentMethodId: String) async throws -> Bool {
         isLoading = true
         errorMessage = nil
         
+        // Simulate network delay
+        try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+        
         defer { isLoading = false }
         
-        guard let url = URL(string: "\(baseURL)/payment_intents/\(clientSecret)/confirm") else {
-            throw StripeError.invalidURL
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(publishableKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        
-        let body = "payment_method=\(paymentMethodId)"
-        request.httpBody = body.data(using: .utf8)
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw StripeError.paymentFailed
-        }
-        
-        let result = try JSONDecoder().decode(StripePaymentResult.self, from: data)
-        return result.status == "succeeded"
+        // Mock successful payment confirmation
+        // In a real implementation, this would call Stripe's API
+        return true
     }
 }
 
