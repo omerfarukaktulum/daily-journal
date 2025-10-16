@@ -665,7 +665,7 @@ struct TagChip: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Capsule().fill(Color.purple.opacity(0.2)))
+        .background(Capsule().fill(Color.purple.opacity(0.15)))
         .foregroundColor(.purple)
     }
 }

@@ -416,7 +416,7 @@ struct FilterChip: View {
             .padding(.vertical, 8)
             .background(
                 Capsule()
-                    .fill(isSelected ? Color.purple.opacity(0.7) : Color.purple.opacity(0.15))
+                    .fill(isSelected ? Color.purple : Color.purple.opacity(0.15))
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -832,7 +832,7 @@ struct BookPageView: View {
                             .font(.subheadline)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(Capsule().fill(Color.purple.opacity(0.2)))
+                            .background(Capsule().fill(Color.purple.opacity(0.15)))
                             .foregroundColor(.purple)
                     }
                 }
