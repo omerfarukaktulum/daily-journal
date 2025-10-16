@@ -14,19 +14,28 @@ class AIService: ObservableObject {
     private let baseURL = "https://api.openai.com/v1/chat/completions"
     
     init() {
-        // Read API key from UserDefaults (where user saves it in Settings)
-        // In production, should use Keychain for better security
-        let userDefaultsKey = UserDefaults.standard.string(forKey: "openai_api_key")
+        // Read API key from Keychain (secure storage)
+        let keychainKey = KeychainService.shared.load(key: "openai_api_key")
         let envKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"]
         
         // Debug logging
         print("🔑 API Key Sources:")
-        print("   - UserDefaults: \(userDefaultsKey?.prefix(10) ?? "nil")...")
+        print("   - Keychain: \(keychainKey?.prefix(10) ?? "nil")...")
         print("   - Environment: \(envKey?.prefix(10) ?? "nil")...")
         
-        self.apiKey = userDefaultsKey ?? envKey ?? "YOUR_API_KEY_HERE"
+        self.apiKey = keychainKey ?? envKey ?? "YOUR_API_KEY_HERE"
         
         print("   - Final key: \(self.apiKey.prefix(10))...")
+    }
+    
+    // MARK: - Save API Key Securely
+    func saveAPIKey(_ key: String) -> Bool {
+        return KeychainService.shared.save(key: "openai_api_key", value: key)
+    }
+    
+    // MARK: - Check if API Key is Set
+    func hasAPIKey() -> Bool {
+        return !apiKey.isEmpty && apiKey != "YOUR_API_KEY_HERE"
     }
     
     func improveText(_ text: String) async throws -> [String] {

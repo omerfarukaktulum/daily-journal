@@ -375,7 +375,8 @@ struct TextEntryEditorView: View {
             .alert("OpenAI API Key Required", isPresented: $showingAPIKeyAlert) {
                 TextField("Enter your OpenAI API key", text: $apiKeyInput)
                 Button("Save") {
-                    UserDefaults.standard.set(apiKeyInput, forKey: "openai_api_key")
+                    // Save to Keychain for security
+                    KeychainService.shared.save(key: "openai_api_key", value: apiKeyInput)
                     apiKeyInput = ""
                 }
                 Button("Cancel", role: .cancel) {
