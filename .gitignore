@@ -34,3 +34,6 @@ xcschememanagement.plist
 memora/memora.xcodeproj/xcshareddata/xcschemes/memora.xcscheme
 backend/.env
 backend/.env
+
+# iOS Secrets
+memora/memora/Config/Secrets.plist
