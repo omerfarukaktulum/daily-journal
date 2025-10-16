@@ -220,34 +220,49 @@ struct SettingsView: View {
     
     // MARK: - Premium Banner
     var premiumBanner: some View {
-        VStack(spacing: 16) {
-        HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.yellow.opacity(0.3), Color.orange.opacity(0.3)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+        VStack(spacing: 20) {
+            // Welcome Header
+            VStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.purple.opacity(0.2), Color.pink.opacity(0.2)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
-                    )
-                    .frame(width: 56, height: 56)
+                        .frame(width: 70, height: 70)
+                    
+                    Image(systemName: "crown.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.purple)
+                }
                 
-                Image(systemName: "crown.fill")
-                    .font(.title2)
-                    .foregroundColor(.yellow)
+                VStack(spacing: 6) {
+                    Text("Welcome to Premium!")
+                        .font(.title2.bold())
+                        .foregroundColor(.primary)
+                    
+                    Text("You now have access to all premium features")
+                        .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
             }
             
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Premium Member")
+            // Premium Features
+            VStack(spacing: 12) {
+                Text("Your Premium Features")
                     .font(.headline)
+                    .foregroundColor(.primary)
                 
-                Text("Thank you for your support!")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-            Spacer()
+                VStack(spacing: 8) {
+                    PremiumFeatureRow(icon: "sparkles", title: "3 AI Improvements Per Day", isActive: true)
+                    PremiumFeatureRow(icon: "mic.fill", title: "Advanced Voice Transcription", isActive: true)
+                    PremiumFeatureRow(icon: "paintbrush.fill", title: "Premium Themes", isActive: true)
+                    PremiumFeatureRow(icon: "chart.line.uptrend.xyaxis", title: "Advanced Analytics", isActive: true)
+                }
             }
             
             // Downgrade Button
@@ -279,7 +294,7 @@ struct SettingsView: View {
             RoundedRectangle(cornerRadius: 15)
                 .fill(
                     LinearGradient(
-                        colors: [Color.yellow.opacity(0.1), Color.orange.opacity(0.05)],
+                        colors: [Color.purple.opacity(0.1), Color.pink.opacity(0.05)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -287,7 +302,14 @@ struct SettingsView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 15)
-                .strokeBorder(Color.yellow.opacity(0.3), lineWidth: 1)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [Color.purple.opacity(0.3), Color.pink.opacity(0.3)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
         )
         .padding(.horizontal)
     }
@@ -1240,6 +1262,43 @@ struct FeatureRow: View {
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color(.systemGray6))
+        )
+    }
+}
+
+struct PremiumFeatureRow: View {
+    let icon: String
+    let title: String
+    let isActive: Bool
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundColor(isActive ? .purple : .gray)
+                .frame(width: 24)
+            
+            Text(title)
+                .font(.subheadline)
+                .foregroundColor(isActive ? .primary : .secondary)
+            
+            Spacer()
+            
+            if isActive {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                    .font(.title3)
+            } else {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundColor(.red)
+                    .font(.title3)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isActive ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
         )
     }
 }
