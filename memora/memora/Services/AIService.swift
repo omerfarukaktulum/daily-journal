@@ -10,8 +10,7 @@ import Combine
 
 @MainActor
 class AIService: ObservableObject {
-    private let apiKey: String
-    private let baseURL = "https://api.openai.com/v1/chat/completions"
+    private let backendURL = Config.backendURL
     
     init() {
         // Read API key from Keychain (secure storage)
@@ -38,27 +37,48 @@ class AIService: ObservableObject {
         return !apiKey.isEmpty && apiKey != "YOUR_API_KEY_HERE"
     }
     
+    // MARK: - Debug: Show Key Source
+    func getKeySource() -> String {
+        let keychainKey = KeychainService.shared.load(key: "openai_api_key")
+        let envKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"]
+        
+        if keychainKey != nil {
+            return "Keychain (secure)"
+        } else if envKey != nil {
+            return "Environment (development)"
+        } else {
+            return "Default (not set)"
+        }
+    }
+    
     func improveText(_ text: String) async throws -> [String] {
-        let prompt = """
-        You are a compassionate journaling assistant. The user has written a personal journal entry. 
-        Please provide 2-3 improved versions that:
-        - Preserve the user's authentic voice and emotions
-        - Enhance clarity and flow
-        - Keep the same meaning and tone
-        - Make it more reflective and meaningful
+        guard let url = URL(string: "\(backendURL)/api/improve-text") else {
+            throw AIError.invalidURL
+        }
         
-        Original entry:
-        "\(text)"
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        Provide only the improved versions, separated by "---VERSION---", without any additional commentary.
-        """
+        let requestBody: [String: Any] = [
+            "text": text
+        ]
         
-        let response = try await callOpenAI(prompt: prompt, maxTokens: 500)
-        let versions = response.components(separatedBy: "---VERSION---")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         
-        return versions.isEmpty ? [text] : versions
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AIError.invalidResponse
+        }
+        
+        if httpResponse.statusCode != 200 {
+            let errorData = try JSONDecoder().decode(BackendErrorResponse.self, from: data)
+            throw AIError.serverError(errorData.error)
+        }
+        
+        let result = try JSONDecoder().decode(TextImprovementResponse.self, from: data)
+        return result.versions
     }
     
     func generatePhotoCaption(description: String, metadata: [String: String]) async throws -> String {
@@ -167,6 +187,22 @@ enum AIServiceError: LocalizedError {
             return "Invalid response from AI service"
         }
     }
+}
+
+// MARK: - AI Response Models
+struct TextImprovementResponse: Codable {
+    let success: Bool
+    let versions: [String]
+}
+
+struct CaptionGenerationResponse: Codable {
+    let success: Bool
+    let caption: String
+}
+
+struct BackendErrorResponse: Codable {
+    let success: Bool
+    let error: String
 }
 
 

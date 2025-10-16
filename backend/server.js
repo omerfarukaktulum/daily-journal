@@ -4,6 +4,13 @@ const bodyParser = require('body-parser');
 const stripe = require('stripe')(require('./config').stripe.secretKey);
 const config = require('./config');
 
+// OpenAI integration
+const OpenAI = require('openai');
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
 const app = express();
 
 // Security middleware
@@ -137,6 +144,90 @@ app.post('/api/confirm-payment', async (req, res) => {
   }
 });
 
+// AI Endpoints
+// Improve text endpoint
+app.post('/api/improve-text', async (req, res) => {
+  try {
+    const { text } = req.body;
+    
+    if (!text) {
+      return res.status(400).json({
+        success: false,
+        error: 'Text is required'
+      });
+    }
+    
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are a compassionate journaling assistant. The user has written a personal journal entry. Please provide 2-3 improved versions that preserve the user's authentic voice and emotions, enhance clarity and flow, keep the same meaning and tone, and make it more reflective and meaningful."
+        },
+        {
+          role: "user",
+          content: `Original entry: "${text}"\n\nProvide only the improved versions, separated by "---VERSION---", without any additional commentary.`
+        }
+      ],
+      max_tokens: 500,
+      temperature: 0.7
+    });
+    
+    const response = completion.choices[0].message.content;
+    const versions = response.split('---VERSION---')
+      .map(v => v.trim())
+      .filter(v => v.length > 0);
+    
+    res.json({
+      success: true,
+      versions: versions.length > 0 ? versions : [text]
+    });
+    
+  } catch (error) {
+    console.error('OpenAI API error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to improve text'
+    });
+  }
+});
+
+// Generate photo caption endpoint
+app.post('/api/generate-caption', async (req, res) => {
+  try {
+    const { description, metadata } = req.body;
+    
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are a creative caption generator for journal entries. Create engaging, reflective captions that capture the essence of the moment."
+        },
+        {
+          role: "user",
+          content: `Generate a caption for: "${description}"\n\nMetadata: ${JSON.stringify(metadata)}`
+        }
+      ],
+      max_tokens: 100,
+      temperature: 0.8
+    });
+    
+    const caption = completion.choices[0].message.content.trim();
+    
+    res.json({
+      success: true,
+      caption: caption
+    });
+    
+  } catch (error) {
+    console.error('OpenAI API error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate caption'
+    });
+  }
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
