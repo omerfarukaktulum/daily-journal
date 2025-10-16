@@ -111,7 +111,7 @@ app.post('/api/webhook', express.raw({type: 'application/json'}), async (req, re
   console.log('🔧 Webhook: Raw body preview:', req.body?.toString().substring(0, 100) || 'No body');
   
   const sig = req.headers['stripe-signature'];
-  const endpointSecret = 'whsec_39e83cf1b9296d2b1dd1cd77762ad354d9285895ffca4e2568a34f34f515a84e';
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
   let event;
 
   try {
