@@ -20,7 +20,6 @@ touch .env
 # Add your Stripe keys to .env
 echo "STRIPE_SECRET_KEY=your_stripe_secret_key_here" >> .env
 echo "STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key_here" >> .env
-echo "STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret_here" >> .env
 echo "PORT=3000" >> .env
 echo "NODE_ENV=development" >> .env
 echo "ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080" >> .env
@@ -65,17 +64,12 @@ Content-Type: application/json
 }
 ```
 
-### Webhook (Stripe Events)
-```
-POST /api/webhook
-```
 
 ## 🔧 Configuration
 
 The server requires environment variables to be set:
 - **STRIPE_SECRET_KEY**: Your Stripe secret key (sk_test_...)
 - **STRIPE_PUBLISHABLE_KEY**: Your Stripe publishable key (pk_test_...)
-- **STRIPE_WEBHOOK_SECRET**: Your Stripe webhook secret (whsec_...)
 
 ## 🌍 Deployment
 
@@ -88,7 +82,6 @@ heroku create memora-backend
 # Set environment variables
 heroku config:set STRIPE_SECRET_KEY=sk_live_...
 heroku config:set STRIPE_PUBLISHABLE_KEY=pk_live_...
-heroku config:set STRIPE_WEBHOOK_SECRET=whsec_...
 
 # Deploy
 git push heroku main
@@ -128,6 +121,5 @@ All payments will appear in your Stripe test dashboard with:
 The server includes:
 - **CORS enabled** for iOS app
 - **Error handling** with detailed logs
-- **Webhook support** for Stripe events
 - **Health monitoring** endpoint
 - **Automatic restart** in development mode
