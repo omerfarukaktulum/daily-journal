@@ -1300,7 +1300,7 @@ struct PricingCard: View {
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(
-                    isSelected ? Color.blue : (isRecommended ? Color.purple : Color.gray.opacity(0.3)), 
+                    isSelected ? Color.blue : Color.gray.opacity(0.3), 
                     lineWidth: isSelected ? 3 : 2
                 )
                 .background(

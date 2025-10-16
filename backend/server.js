@@ -42,7 +42,7 @@ app.post('/api/create-payment-intent', async (req, res) => {
   try {
     const { amount, currency = 'usd', plan } = req.body;
     
-    console.log('🔧 Backend: Creating payment intent:', { amount, currency, plan });
+    console.log('🔧 Backend: Creating payment intent:', { amount, currency, plan, amountInDollars: `$${(amount / 100).toFixed(2)}` });
     
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,

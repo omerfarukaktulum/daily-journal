@@ -60,11 +60,20 @@ struct PaymentSheetWrapper: UIViewControllerRepresentable {
             paymentSheet.present(from: viewController) { result in
                 switch result {
                 case .completed:
+                    print("✅ PaymentSheet: Payment completed successfully")
                     onPaymentResult(.completed)
                 case .canceled:
+                    print("⚠️ PaymentSheet: Payment canceled by user")
                     onPaymentResult(.canceled)
                 case .failed(let error):
-                    onPaymentResult(.failed(error))
+                    print("❌ PaymentSheet: Payment failed with error: \(error)")
+                    // Check if it's actually a success in terminal state
+                    if error.localizedDescription.contains("succeeded") {
+                        print("✅ PaymentSheet: Payment actually succeeded (terminal state)")
+                        onPaymentResult(.completed)
+                    } else {
+                        onPaymentResult(.failed(error))
+                    }
                 }
             }
         }
