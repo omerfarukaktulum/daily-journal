@@ -59,6 +59,12 @@ struct MainTabView: View {
                 appState.shouldNavigateToJournal = false // Reset flag
             }
         }
+        .onChange(of: appState.shouldNavigateToNewEntry) { shouldNavigate in
+            if shouldNavigate {
+                selectedTab = 1 // Switch to NewEntry tab
+                appState.shouldNavigateToNewEntry = false // Reset flag
+            }
+        }
     }
 }
 

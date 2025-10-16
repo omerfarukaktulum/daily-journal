@@ -8,6 +8,7 @@ struct PaymentView: View {
     let plan: PremiumPlan
     @State private var showingPaymentSheet = false
     @State private var paymentSuccess = false
+    @State private var showingWelcomePage = false
     
     var body: some View {
         NavigationStack {
@@ -223,7 +224,7 @@ struct PaymentView: View {
                                 print("Payment completed successfully!")
                                 paymentSuccess = true
                                 appState.isPremiumUser = true
-                                dismiss()
+                                showingWelcomePage = true
                             case .canceled:
                                 print("Payment canceled by user")
                                 // User canceled, do nothing
@@ -245,9 +246,12 @@ struct PaymentView: View {
             }
             .onChange(of: paymentSuccess) { success in
                 if success {
-                    // Payment successful - dismiss immediately
-                    dismiss()
+                    // Payment successful - show welcome page
+                    showingWelcomePage = true
                 }
+            }
+            .sheet(isPresented: $showingWelcomePage) {
+                PremiumWelcomeView()
             }
         }
     }

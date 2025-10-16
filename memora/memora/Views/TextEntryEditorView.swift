@@ -36,6 +36,7 @@ struct TextEntryEditorView: View {
     @State private var aiSuggestions: [String] = []
     @State private var isLoadingAI = false
     @State private var showingPremiumSheet = false
+    @State private var showingDailyLimitAlert = false
     @State private var showingAPIKeyAlert = false
     @State private var apiKeyInput = ""
     @State private var usedAI = false // Track if AI was used
@@ -366,6 +367,11 @@ struct TextEntryEditorView: View {
             .sheet(isPresented: $showingPremiumSheet) {
                 PremiumUpgradeView()
             }
+            .alert("Daily AI Limit Reached", isPresented: $showingDailyLimitAlert) {
+                Button("OK") { }
+            } message: {
+                Text("You've used all 5 AI improvements for today. Come back tomorrow for more AI-powered enhancements!")
+            }
             .alert("OpenAI API Key Required", isPresented: $showingAPIKeyAlert) {
                 TextField("Enter your OpenAI API key", text: $apiKeyInput)
                 Button("Save") {
@@ -504,8 +510,17 @@ struct TextEntryEditorView: View {
             return
         }
         
-        guard appState.canUseAI() else {
+        // Check if user is premium first
+        if !appState.isPremiumUser {
+            // Free user needs to upgrade
             showingPremiumSheet = true
+            return
+        }
+        
+        // Premium user - check daily usage
+        guard appState.canUseAI() else {
+            // Premium user has reached daily limit
+            showingDailyLimitAlert = true
             return
         }
         

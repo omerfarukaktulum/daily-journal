@@ -205,7 +205,11 @@ struct SettingsView: View {
             .background(Color(.systemGroupedBackground))
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingPremiumSheet) {
-                PremiumUpgradeView()
+                if appState.isPremiumUser {
+                    PremiumWelcomeView()
+                } else {
+                    PremiumUpgradeView()
+                }
             }
             .alert("Downgrade to Standard", isPresented: $showingDowngradeAlert) {
                 Button("Cancel", role: .cancel) { }
@@ -220,97 +224,86 @@ struct SettingsView: View {
     
     // MARK: - Premium Banner
     var premiumBanner: some View {
-        VStack(spacing: 20) {
-            // Welcome Header
-            VStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.purple.opacity(0.2), Color.pink.opacity(0.2)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+        Button(action: { showingPremiumSheet = true }) {
+            VStack(spacing: 16) {
+                HStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.purple.opacity(0.2), Color.pink.opacity(0.2)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
-                        .frame(width: 70, height: 70)
+                            .frame(width: 56, height: 56)
+                        
+                        Image(systemName: "crown.fill")
+                            .font(.title2)
+                            .foregroundColor(.yellow)
+                    }
                     
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: 30))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Premium Account")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Text("Premium features • Advanced analytics")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                        Spacer()
+                    
+                    Image(systemName: "arrow.right.circle.fill")
+                        .font(.title2)
                         .foregroundColor(.purple)
                 }
                 
-                VStack(spacing: 6) {
-                    Text("Welcome to Premium!")
-                        .font(.title2.bold())
-                        .foregroundColor(.primary)
+                // AI Usage Progress
+                VStack(alignment: .leading, spacing: 8) {
                     
-                    Text("You now have access to all premium features")
-                        .font(.subheadline)
+                    HStack {
+                        Text("AI Usage Today")
+                            .font(.caption)
                             .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
+                        
+                        Spacer()
+                        
+                        Text("\(appState.aiUsageCount)/5")
+                            .font(.caption.bold())
+                            .foregroundColor(appState.aiUsageCount < 5 ? .purple : .orange)
+                    }
+                    
+                    // Progress bar showing usage
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(height: 8)
+                            
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(
+                                    LinearGradient(
+                                        colors: appState.aiUsageCount < 5 ? [.purple, .purple] : [.orange, .orange],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: geometry.size.width * min(1.0, Double(appState.aiUsageCount) / 5.0), height: 8)
+                        }
+                    }
+                    .frame(height: 8)
                 }
             }
-            
-            // Premium Features
-            VStack(spacing: 12) {
-                Text("Your Premium Features")
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
-                VStack(spacing: 8) {
-                    PremiumFeatureRow(icon: "sparkles", title: "3 AI Improvements Per Day", isActive: true)
-                    PremiumFeatureRow(icon: "mic.fill", title: "Advanced Voice Transcription", isActive: true)
-                    PremiumFeatureRow(icon: "paintbrush.fill", title: "Premium Themes", isActive: true)
-                    PremiumFeatureRow(icon: "chart.line.uptrend.xyaxis", title: "Advanced Analytics", isActive: true)
-                }
-            }
-            
-            // Downgrade Button
-            Button(action: {
-                showingDowngradeAlert = true
-            }) {
-                HStack {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.title3)
-                    Text("Downgrade to Standard")
-                        .font(.subheadline.bold())
-                }
-                .foregroundColor(.red)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.red.opacity(0.1))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .strokeBorder(Color.red.opacity(0.3), lineWidth: 1)
-                        )
-                )
-            }
-            .buttonStyle(PlainButtonStyle())
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 15)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+            )
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 15)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.purple.opacity(0.1), Color.pink.opacity(0.05)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 15)
-                .strokeBorder(
-                    LinearGradient(
-                        colors: [Color.purple.opacity(0.3), Color.pink.opacity(0.3)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1
-                )
-        )
+        .buttonStyle(PlainButtonStyle())
         .padding(.horizontal)
     }
     

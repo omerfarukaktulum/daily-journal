@@ -45,6 +45,7 @@ class AppState: ObservableObject {
     // Navigation to newly saved entry
     @Published var pendingEntryToShow: UUID? = nil
     @Published var shouldNavigateToJournal: Bool = false
+    @Published var shouldNavigateToNewEntry: Bool = false
     
     init() {
         self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
@@ -74,7 +75,7 @@ class AppState: ObservableObject {
     func canUseAI() -> Bool {
         if isPremiumUser {
             resetDailyUsageIfNeeded()
-            return aiUsageCount < 3  // Premium: 3 per day
+            return aiUsageCount < 5  // Premium: 5 per day
         } else {
             return aiUsageCount < 5  // Free: 5 total (lifetime)
         }
