@@ -243,10 +243,10 @@ struct SettingsView: View {
                     .font(.headline)
                 
                 Text("Thank you for your support!")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
             Spacer()
             }
             
@@ -323,7 +323,7 @@ struct SettingsView: View {
                             .foregroundColor(.secondary)
                     }
                     
-                    Spacer()
+                        Spacer()
                     
                     Image(systemName: "arrow.right.circle.fill")
                         .font(.title2)
@@ -477,8 +477,8 @@ struct HowToCreateEntriesView: View {
                     
                     Text("Memora offers three different ways to capture your memories and thoughts.")
                         .font(.body)
-                        .foregroundColor(.secondary)
-                }
+                    .foregroundColor(.secondary)
+            }
                 .padding(.horizontal)
                 .padding(.top, 20)
                 
@@ -626,7 +626,7 @@ struct UsingAIFeaturesView: View {
                     VStack(spacing: 12) {
                         HStack {
                             Image(systemName: "person.fill")
-                                .foregroundColor(.purple)
+                    .foregroundColor(.purple)
                             Text("Free Users")
                                 .font(.subheadline.bold())
                             Spacer()
@@ -1140,9 +1140,9 @@ struct StripePaymentView: View {
                 .padding(.horizontal)
                 
                 // Real Stripe PaymentSheet Interface
-                if let paymentSheet = stripeService.paymentSheet {
+                if let clientSecret = stripeService.clientSecret {
                     PaymentSheetView(
-                        paymentSheet: paymentSheet,
+                        clientSecret: clientSecret,
                         onPaymentResult: { result in
                             switch result {
                             case .completed:
@@ -1209,30 +1209,6 @@ struct StripePaymentView: View {
     }
 }
 
-struct PaymentSheetView: UIViewControllerRepresentable {
-    let paymentSheet: PaymentSheet
-    let onPaymentResult: (PaymentSheetResult) -> Void
-    
-    func makeUIViewController(context: Context) -> UIViewController {
-        print("🔧 PaymentSheetView: Creating UIViewController")
-        let viewController = UIViewController()
-        
-        // Present PaymentSheet using the correct API for version 22.8.0
-        DispatchQueue.main.async {
-            print("🔧 PaymentSheetView: Presenting PaymentSheet...")
-            paymentSheet.present(from: viewController) { result in
-                print("🔧 PaymentSheetView: Payment result received: \(result)")
-                onPaymentResult(result)
-            }
-        }
-        
-        return viewController
-    }
-    
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
-        // No updates needed
-    }
-}
 
 struct FeatureRow: View {
     let icon: String
