@@ -66,7 +66,7 @@ struct PaymentView: View {
                                 .foregroundColor(.green)
                         }
                     }
-                }
+                } 
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 15)
@@ -106,6 +106,64 @@ struct PaymentView: View {
                 .disabled(stripeService.isLoading)
                 .padding(.horizontal)
                 
+                // Test Card Information
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Test Payment Information")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Text("Powered by Stripe")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.blue.opacity(0.1))
+                            )
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("💳 Test Card: 4242 4242 4242 4242")
+                            .font(.title3.monospaced())
+                            .foregroundColor(.primary)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(.systemBackground))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+                        
+                        Text("📅 Expiry: Any future date (e.g., 12/25)")
+                        Text("🔒 CVC: Any 3 digits (e.g., 123)")
+                        Text("📧 Email: Any valid email")
+                    }
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    
+                    // Security notice
+                    HStack {
+                        Image(systemName: "lock.shield.fill")
+                            .foregroundColor(.green)
+                        Text("Your payment is secured by Stripe's industry-leading security")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top, 4)
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(.systemGray6))
+                )
+                .padding(.horizontal)
+                
                 // Error Message
                 if let errorMessage = stripeService.errorMessage {
                     Text(errorMessage)
@@ -140,152 +198,63 @@ struct PaymentView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingPaymentSheet) {
-                StripePaymentSheet(
-                    plan: plan,
-                    onPaymentSuccess: {
-                        paymentSuccess = true
-                        appState.isPremiumUser = true
-                        dismiss()
+            .onAppear {
+                Task {
+                    do {
+                        try await stripeService.setupPayment(
+                            amount: plan.price,
+                            currency: "usd",
+                            plan: plan.rawValue
+                        )
+                    } catch {
+                        print("Error setting up payment: \(error)")
                     }
-                )
+                }
             }
-            .alert("Payment Successful!", isPresented: $paymentSuccess) {
-                Button("OK") {
+            .sheet(isPresented: $showingPaymentSheet) {
+                if let paymentSheet = stripeService.paymentSheet {
+                    PaymentSheetView(
+                        paymentSheet: paymentSheet,
+                        onPaymentResult: { result in
+                            showingPaymentSheet = false
+                            print("Payment result: \(result)")
+                            switch result {
+                            case .completed:
+                                print("Payment completed successfully!")
+                                paymentSuccess = true
+                                appState.isPremiumUser = true
+                                dismiss()
+                            case .canceled:
+                                print("Payment canceled by user")
+                                // User canceled, do nothing
+                                break
+                            case .failed(let error):
+                                print("Payment failed with error: \(error)")
+                            }
+                        }
+                    )
+                } else {
+                    VStack {
+                        Text("Setting up payment...")
+                            .font(.headline)
+                        ProgressView()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemBackground))
+                }
+            }
+            .onChange(of: paymentSuccess) { success in
+                if success {
+                    // Payment successful - dismiss immediately
                     dismiss()
                 }
-            } message: {
-                Text("Welcome to Memora Premium! You now have access to all premium features.")
             }
         }
     }
 }
 
-struct StripePaymentSheet: View {
-    let plan: PremiumPlan
-    let onPaymentSuccess: () -> Void
-    
-    @Environment(\.dismiss) var dismiss
-    @StateObject private var stripeService = StripeService()
-    @State private var clientSecret: String?
-    @State private var showingPaymentMethod = false
-    
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                if let clientSecret = clientSecret {
-                    // Simplified payment form for demo
-                    VStack(spacing: 20) {
-                        Text("Payment Method")
-                            .font(.title2.bold())
-                        
-                        // Real Stripe payment form
-                        VStack(spacing: 15) {
-                            TextField("Card Number", text: .constant("4242 4242 4242 4242"))
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .disabled(true)
-                            
-                            HStack {
-                                TextField("MM/YY", text: .constant("12/25"))
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .disabled(true)
-                                
-                                TextField("CVC", text: .constant("123"))
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .disabled(true)
-                            }
-                        }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(Color(.systemBackground))
-                                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
-                        )
-                        
-                        Text("Processing secure payment with Stripe")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                            .padding(.horizontal)
-                        
-                        Button(action: {
-                            // Real Stripe payment processing
-                            Task {
-                                do {
-                                    let success = try await stripeService.confirmPayment(
-                                        clientSecret: clientSecret,
-                                        paymentMethodId: "pm_card_visa" // Stripe test payment method
-                                    )
-                                    if success {
-                                        onPaymentSuccess()
-                                    }
-                                } catch {
-                                    print("Payment error: \(error)")
-                                    // Show error to user
-                                    DispatchQueue.main.async {
-                                        stripeService.errorMessage = error.localizedDescription
-                                    }
-                                }
-                            }
-                        }) {
-                            Text("Complete Payment")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(
-                                    LinearGradient(
-                                        colors: [.purple, .blue],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .cornerRadius(15)
-                        }
-                        .disabled(stripeService.isLoading)
-                        
-                        // Error Message
-                        if let errorMessage = stripeService.errorMessage {
-                            Text(errorMessage)
-                                .font(.caption)
-                                .foregroundColor(.red)
-                                .padding(.horizontal)
-                        }
-                    }
-                } else {
-                    ProgressView("Setting up payment...")
-                        .onAppear {
-                            Task {
-                                do {
-                                    clientSecret = try await stripeService.createPaymentIntent(
-                                        amount: plan.price,
-                                        currency: "usd",
-                                        plan: plan.rawValue
-                                    )
-                                } catch {
-                                    print("Error creating payment intent: \(error)")
-                                    // Show error to user
-                                    DispatchQueue.main.async {
-                                        stripeService.errorMessage = error.localizedDescription
-                                    }
-                                }
-                            }
-                        }
-                }
-                
-                Spacer()
-            }
-            .padding()
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-            }
-        }
-    }
-}
+
+
 
 #Preview {
     PaymentView(plan: .monthly)

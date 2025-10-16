@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Stripe
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
@@ -13,6 +14,7 @@ struct SettingsView: View {
     @State private var notificationTime = Date()
     @State private var privacyMode = false
     @State private var showingPremiumSheet = false
+    @State private var showingDowngradeAlert = false
     
     init() {
         // Load notification time from UserDefaults
@@ -205,11 +207,20 @@ struct SettingsView: View {
             .sheet(isPresented: $showingPremiumSheet) {
                 PremiumUpgradeView()
             }
+            .alert("Downgrade to Standard", isPresented: $showingDowngradeAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Downgrade", role: .destructive) {
+                    appState.isPremiumUser = false
+                }
+            } message: {
+                Text("You'll lose access to unlimited AI features, premium themes, and other premium benefits. You'll be limited to 5 AI uses per day. Are you sure you want to downgrade?")
+            }
         }
     }
     
     // MARK: - Premium Banner
     var premiumBanner: some View {
+        VStack(spacing: 16) {
         HStack(spacing: 16) {
             ZStack {
                 Circle()
@@ -237,6 +248,31 @@ struct SettingsView: View {
             }
             
             Spacer()
+            }
+            
+            // Downgrade Button
+            Button(action: {
+                showingDowngradeAlert = true
+            }) {
+                HStack {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.title3)
+                    Text("Downgrade to Standard")
+                        .font(.subheadline.bold())
+                }
+                .foregroundColor(.red)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.red.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .strokeBorder(Color.red.opacity(0.3), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
         }
         .padding(16)
         .background(
@@ -973,15 +1009,18 @@ struct PremiumUpgradeView: View {
                     .padding(.horizontal)
                     
                     // Pricing
-                    VStack(spacing: 10) {
+                    HStack(spacing: 12) {
                         PricingCard(
                             title: "Monthly",
                             price: "$4.99",
                             period: "per month",
-                            isRecommended: selectedPlan == .monthly
+                            isRecommended: false,
+                            isSelected: selectedPlan == .monthly
                         )
                         .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.2)) {
                             selectedPlan = .monthly
+                            }
                         }
                         
                         PricingCard(
@@ -989,10 +1028,13 @@ struct PremiumUpgradeView: View {
                             price: "$39.99",
                             period: "per year",
                             savings: "Save 33%",
-                            isRecommended: selectedPlan == .yearly
+                            isRecommended: true,
+                            isSelected: selectedPlan == .yearly
                         )
                         .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.2)) {
                             selectedPlan = .yearly
+                            }
                         }
                     }
                     .padding(.horizontal)
@@ -1039,9 +1081,156 @@ struct PremiumUpgradeView: View {
                 }
             }
             .sheet(isPresented: $showingPayment) {
-                PaymentView(plan: selectedPlan)
+                StripePaymentView(plan: selectedPlan)
             }
         }
+    }
+}
+
+struct StripePaymentView: View {
+    let plan: PremiumPlan
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var appState: AppState
+    @StateObject private var stripeService = StripeService()
+    @State private var paymentSuccess = false
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 30) {
+                // Header
+                VStack(spacing: 15) {
+                    Image(systemName: "creditcard.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.blue)
+                    
+                    Text("Complete Payment")
+                        .font(.title.bold())
+                    
+                    Text("Secure payment powered by Stripe")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 20)
+                
+                // Plan Summary
+                VStack(spacing: 10) {
+                    HStack {
+                        Text("Plan")
+                            .font(.headline)
+                        Spacer()
+                        Text(plan.rawValue.capitalized)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                    }
+                    
+                    HStack {
+                        Text("Price")
+                            .font(.headline)
+                        Spacer()
+                        Text(plan.displayPrice)
+                            .font(.title2.bold())
+                            .foregroundColor(.primary)
+                    }
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 15)
+                        .fill(Color(.systemGray6))
+                )
+                .padding(.horizontal)
+                
+                // Real Stripe PaymentSheet Interface
+                if let paymentSheet = stripeService.paymentSheet {
+                    PaymentSheetView(
+                        paymentSheet: paymentSheet,
+                        onPaymentResult: { result in
+                            switch result {
+                            case .completed:
+                                paymentSuccess = true
+                                appState.isPremiumUser = true
+                                dismiss()
+                            case .canceled:
+                                // User canceled, do nothing
+                                break
+                            case .failed(let error):
+                                print("Payment failed: \(error)")
+                            }
+                        }
+                    )
+                    .frame(height: 400)
+                    .background(
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+                    )
+                    .padding(.horizontal)
+                } else {
+                    // Loading state
+                    VStack(spacing: 20) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                        
+                        Text("Setting up secure payment...")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(height: 400)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+                    )
+                    .padding(.horizontal)
+                }
+                
+                Spacer()
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+            .task {
+                do {
+                    try await stripeService.setupPayment(
+                        amount: plan.price,
+                        currency: "usd",
+                        plan: plan.rawValue
+                    )
+                } catch {
+                    print("Error setting up payment: \(error)")
+                }
+            }
+        }
+    }
+}
+
+struct PaymentSheetView: UIViewControllerRepresentable {
+    let paymentSheet: PaymentSheet
+    let onPaymentResult: (PaymentSheetResult) -> Void
+    
+    func makeUIViewController(context: Context) -> UIViewController {
+        print("🔧 PaymentSheetView: Creating UIViewController")
+        let viewController = UIViewController()
+        
+        // Present PaymentSheet using the correct API for version 22.8.0
+        DispatchQueue.main.async {
+            print("🔧 PaymentSheetView: Presenting PaymentSheet...")
+            paymentSheet.present(from: viewController) { result in
+                print("🔧 PaymentSheetView: Payment result received: \(result)")
+                onPaymentResult(result)
+            }
+        }
+        
+        return viewController
+    }
+    
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        // No updates needed
     }
 }
 
@@ -1085,45 +1274,66 @@ struct PricingCard: View {
     let period: String
     var savings: String?
     let isRecommended: Bool
+    let isSelected: Bool
     
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 6) {
+            // Always reserve space for the recommended badge to ensure consistent sizing
             if isRecommended {
                 Text("RECOMMENDED")
-                    .font(.caption.bold())
+                    .font(.caption2.bold())
                     .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
                     .background(Capsule().fill(Color.purple))
+            } else {
+                // Invisible spacer to maintain consistent height
+                Text(" ")
+                    .font(.caption2.bold())
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .opacity(0)
             }
             
             Text(title)
-                .font(.headline)
+                .font(.subheadline.bold())
             
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(price)
-                    .font(.system(size: 36, weight: .bold))
+                    .font(.system(size: 24, weight: .bold))
                 Text(period)
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundColor(.secondary)
             }
             
+            // Always reserve space for savings text to ensure consistent sizing
             if let savings = savings {
                 Text(savings)
-                    .font(.caption.bold())
+                    .font(.caption2.bold())
                     .foregroundColor(.green)
+            } else {
+                // Invisible spacer to maintain consistent height
+                Text(" ")
+                    .font(.caption2.bold())
+                    .opacity(0)
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding()
+        .frame(maxWidth: .infinity, minHeight: 120) // Fixed minimum height
+        .padding(.vertical, 10)
+        .padding(.horizontal, 8)
         .background(
-            RoundedRectangle(cornerRadius: 15)
-                .strokeBorder(isRecommended ? Color.purple : Color.gray.opacity(0.3), lineWidth: 2)
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(
+                    isSelected ? Color.blue : (isRecommended ? Color.purple : Color.gray.opacity(0.3)), 
+                    lineWidth: isSelected ? 3 : 2
+                )
                 .background(
-                    RoundedRectangle(cornerRadius: 15)
-                        .fill(Color.white)
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isSelected ? Color.blue.opacity(0.05) : Color.white)
                 )
         )
+        .scaleEffect(isSelected ? 1.02 : 1.0)
+        .contentShape(Rectangle()) // Make the entire area clickable
     }
 }
 

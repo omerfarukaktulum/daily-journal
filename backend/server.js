@@ -42,7 +42,7 @@ app.post('/api/create-payment-intent', async (req, res) => {
   try {
     const { amount, currency = 'usd', plan } = req.body;
     
-    console.log('Creating payment intent:', { amount, currency, plan });
+    console.log('🔧 Backend: Creating payment intent:', { amount, currency, plan });
     
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
@@ -52,11 +52,13 @@ app.post('/api/create-payment-intent', async (req, res) => {
       },
       metadata: {
         app: 'memora',
-        plan: plan || 'unknown'
+        plan: plan || 'unknown',
+        timestamp: new Date().toISOString()
       }
     });
     
-    console.log('Payment intent created:', paymentIntent.id);
+    console.log('✅ Backend: Payment intent created:', paymentIntent.id);
+    console.log('✅ Backend: Client secret generated');
     
     res.json({
       success: true,
@@ -65,7 +67,7 @@ app.post('/api/create-payment-intent', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error creating payment intent:', error);
+    console.error('❌ Backend: Error creating payment intent:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -78,13 +80,13 @@ app.post('/api/confirm-payment', async (req, res) => {
   try {
     const { paymentIntentId, paymentMethodId } = req.body;
     
-    console.log('Confirming payment:', { paymentIntentId, paymentMethodId });
+    console.log('🔧 Backend: Confirming payment:', { paymentIntentId, paymentMethodId });
     
     const paymentIntent = await stripe.paymentIntents.confirm(paymentIntentId, {
       payment_method: paymentMethodId
     });
     
-    console.log('Payment confirmed:', paymentIntent.id, 'Status:', paymentIntent.status);
+    console.log('✅ Backend: Payment confirmed:', paymentIntent.id, 'Status:', paymentIntent.status);
     
     res.json({
       success: true,
@@ -93,7 +95,7 @@ app.post('/api/confirm-payment', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error confirming payment:', error);
+    console.error('❌ Backend: Error confirming payment:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -102,31 +104,66 @@ app.post('/api/confirm-payment', async (req, res) => {
 });
 
 // Webhook endpoint for Stripe events
-app.post('/api/webhook', express.raw({type: 'application/json'}), (req, res) => {
+app.post('/api/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+  console.log('🔧 Webhook: Request received at', new Date().toISOString());
+  console.log('🔧 Webhook: Headers:', req.headers);
+  console.log('🔧 Webhook: Body length:', req.body?.length || 0);
+  console.log('🔧 Webhook: Raw body preview:', req.body?.toString().substring(0, 100) || 'No body');
+  
   const sig = req.headers['stripe-signature'];
+  const endpointSecret = 'whsec_39e83cf1b9296d2b1dd1cd77762ad354d9285895ffca4e2568a34f34f515a84e';
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, config.stripe.webhookSecret);
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    console.log('✅ Webhook: Event received:', event.type);
   } catch (err) {
-    console.log(`Webhook signature verification failed.`, err.message);
+    console.log(`❌ Webhook: Signature verification failed.`, err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   // Handle the event
-  switch (event.type) {
-    case 'payment_intent.succeeded':
-      const paymentIntent = event.data.object;
-      console.log('Payment succeeded:', paymentIntent.id);
-      // Here you would update your database, send confirmation emails, etc.
-      break;
-    case 'payment_intent.payment_failed':
-      const failedPayment = event.data.object;
-      console.log('Payment failed:', failedPayment.id);
-      // Handle failed payment
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}`);
+  try {
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        const paymentIntent = event.data.object;
+        console.log('✅ Webhook: Payment succeeded:', paymentIntent.id);
+        console.log('✅ Webhook: Amount:', paymentIntent.amount);
+        console.log('✅ Webhook: Currency:', paymentIntent.currency);
+        console.log('✅ Webhook: Metadata:', paymentIntent.metadata);
+        
+        // Update user premium status in your database
+        // This is where you would update your user's premium status
+        // For now, we'll just log the success
+        console.log('✅ Webhook: Payment processing completed successfully');
+        break;
+        
+      case 'checkout.session.completed':
+        const session = event.data.object;
+        console.log('✅ Webhook: Checkout session completed:', session.id);
+        console.log('✅ Webhook: Amount total:', session.amount_total);
+        console.log('✅ Webhook: Currency:', session.currency);
+        console.log('✅ Webhook: Metadata:', session.metadata);
+        console.log('✅ Webhook: Payment status:', session.payment_status);
+        break;
+        
+      case 'payment_intent.payment_failed':
+        const failedPayment = event.data.object;
+        console.log('❌ Webhook: Payment failed:', failedPayment.id);
+        console.log('❌ Webhook: Failure reason:', failedPayment.last_payment_error?.message);
+        break;
+        
+      case 'payment_intent.canceled':
+        const canceledPayment = event.data.object;
+        console.log('⚠️ Webhook: Payment canceled:', canceledPayment.id);
+        break;
+        
+      default:
+        console.log(`ℹ️ Webhook: Unhandled event type ${event.type}`);
+    }
+  } catch (error) {
+    console.error('❌ Webhook: Error processing event:', error);
+    return res.status(500).send('Webhook processing failed');
   }
 
   res.json({received: true});

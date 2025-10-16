@@ -1,16 +1,59 @@
 import Foundation
 import Combine
+import Stripe
+import StripePaymentSheet
 
 @MainActor
 class StripeService: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var clientSecret: String?
+    @Published var paymentSheet: PaymentSheet?
     
     private let publishableKey = "pk_test_51QejagQBQrhHPXtCwr1r1MVXRwc3DTDQDl3a8jmrmuooFdekdft48GPXSArPN0zTfkjte3hXL5Ee3ChLNlFeVDBY00ao2NdQ3w"
     private let backendURL = "http://localhost:3000" // Change to your deployed backend URL
     
+    init() {
+        // Configure Stripe with publishable key
+        StripeAPI.defaultPublishableKey = publishableKey
+    }
+    
+    // MARK: - Create Payment Intent for PaymentSheet
+    func setupPayment(amount: Int, currency: String = "usd", plan: String = "monthly") async throws {
+        print("🔧 StripeService: Setting up payment for amount: \(amount), currency: \(currency), plan: \(plan)")
+        isLoading = true
+        errorMessage = nil
+        
+        defer { isLoading = false }
+        
+        // Get client secret from backend
+        print("🔧 StripeService: Creating payment intent...")
+        clientSecret = try await createPaymentIntent(amount: amount, currency: currency, plan: plan)
+        print("🔧 StripeService: Client secret received: \(clientSecret?.prefix(20) ?? "nil")...")
+        
+        // Create PaymentSheet
+        guard let clientSecret = clientSecret else {
+            print("❌ StripeService: No client secret received")
+            throw StripeError.invalidClientSecret
+        }
+        
+        print("🔧 StripeService: Creating PaymentSheet...")
+        var configuration = PaymentSheet.Configuration()
+        configuration.merchantDisplayName = "Memora"
+        configuration.returnURL = "memora://stripe-redirect"
+        
+        // Configure payment methods to avoid Apple Pay delegate issues
+        configuration.allowsDelayedPaymentMethods = true
+        
+        // Disable Apple Pay to avoid delegate signature issues
+        configuration.applePay = nil
+        
+        paymentSheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
+        print("✅ StripeService: PaymentSheet created successfully")
+    }
+    
     // MARK: - Create Payment Intent (Real Backend Implementation)
-    func createPaymentIntent(amount: Int, currency: String = "usd", plan: String = "monthly") async throws -> String {
+    private func createPaymentIntent(amount: Int, currency: String = "usd", plan: String = "monthly") async throws -> String {
         isLoading = true
         errorMessage = nil
         
@@ -58,12 +101,16 @@ class StripeService: ObservableObject {
             throw StripeError.invalidURL
         }
         
+        // Extract PaymentIntent ID from client secret
+        // Client secret format: pi_xxx_secret_xxx
+        let paymentIntentId = String(clientSecret.split(separator: "_secret_")[0])
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
         let requestBody: [String: Any] = [
-            "paymentIntentId": clientSecret,
+            "paymentIntentId": paymentIntentId,
             "paymentMethodId": paymentMethodId
         ]
         
@@ -106,6 +153,7 @@ enum StripeError: LocalizedError {
     case requestFailed(String)
     case paymentFailed(String)
     case invalidResponse
+    case invalidClientSecret
     
     var errorDescription: String? {
         switch self {
@@ -117,6 +165,8 @@ enum StripeError: LocalizedError {
             return "Payment failed: \(message)"
         case .invalidResponse:
             return "Invalid response"
+        case .invalidClientSecret:
+            return "Invalid client secret"
         }
     }
 }
@@ -148,44 +198,3 @@ struct BackendErrorResponse: Codable {
     let error: String
 }
 
-// MARK: - Premium Plans
-enum PremiumPlan: String, CaseIterable {
-    case monthly = "monthly"
-    case yearly = "yearly"
-    
-    var price: Int {
-        switch self {
-        case .monthly:
-            return 499 // $4.99 in cents
-        case .yearly:
-            return 3999 // $39.99 in cents
-        }
-    }
-    
-    var displayPrice: String {
-        switch self {
-        case .monthly:
-            return "$4.99"
-        case .yearly:
-            return "$39.99"
-        }
-    }
-    
-    var period: String {
-        switch self {
-        case .monthly:
-            return "per month"
-        case .yearly:
-            return "per year"
-        }
-    }
-    
-    var savings: String? {
-        switch self {
-        case .monthly:
-            return nil
-        case .yearly:
-            return "Save 33%"
-        }
-    }
-}
