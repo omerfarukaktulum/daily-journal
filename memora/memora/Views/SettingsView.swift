@@ -1175,7 +1175,7 @@ struct StripePaymentView: View {
                     .frame(height: 400)
                     .background(
                         RoundedRectangle(cornerRadius: 15)
-                            .fill(Color(.systemBackground))
+                            .fill(Color.white)
                             .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
                     )
                     .padding(.horizontal)
@@ -1193,7 +1193,7 @@ struct StripePaymentView: View {
                     .frame(maxWidth: .infinity)
                     .background(
                         RoundedRectangle(cornerRadius: 15)
-                            .fill(Color(.systemBackground))
+                            .fill(Color.white)
                             .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
                     )
                     .padding(.horizontal)

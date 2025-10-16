@@ -73,7 +73,7 @@ struct TextEntryEditorView: View {
                                 .frame(height: 44)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(.systemBackground))
+                                        .fill(Color.white)
                                         .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
                                 )
                             }
@@ -89,7 +89,7 @@ struct TextEntryEditorView: View {
                             
                             ZStack {
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(.systemBackground))
+                                    .fill(Color.white)
                                     .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
                                 
                                 TextField("Give your entry a title...", text: $title)
@@ -152,7 +152,7 @@ struct TextEntryEditorView: View {
                         }
                         .background(
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(.systemBackground))
+                                .fill(Color.white)
                                 .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
                         )
                         .overlay(
@@ -205,7 +205,7 @@ struct TextEntryEditorView: View {
                         
                         ZStack {
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.systemBackground))
+                                .fill(Color.white)
                                 .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
                             
                             TextField("Where are you?", text: $locationSearch.searchQuery)
@@ -275,7 +275,7 @@ struct TextEntryEditorView: View {
                         HStack(spacing: 8) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(.systemBackground))
+                                    .fill(Color.white)
                                     .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
                                 
                                 TextField("Add a tag...", text: $newTag)

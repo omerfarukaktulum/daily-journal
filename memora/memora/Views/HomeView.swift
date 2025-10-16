@@ -573,7 +573,7 @@ struct MemoryCard: View {
         .background(
             RoundedRectangle(cornerRadius: 15)
                 .fill(Color.white)
-                .shadow(color: .black.opacity(0.08), radius: 5, x: 0, y: 2)
+                .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
         )
     }
     

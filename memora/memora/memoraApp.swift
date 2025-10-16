@@ -19,6 +19,7 @@ struct memoraApp: App {
             ContentView()
                 .environment(\.managedObjectContext, dataController.container.viewContext)
                 .environmentObject(appState)
+                .preferredColorScheme(.light)
         }
     }
 }

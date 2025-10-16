@@ -380,7 +380,7 @@ struct StatFilterChip: View {
             .padding(.horizontal, 6)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.purple.opacity(0.7) : Color.purple.opacity(0.15))
+                    .fill(isSelected ? Color.purple : Color.purple.opacity(0.15))
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -843,7 +843,7 @@ struct BookPageView: View {
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(Color.white)
-                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
         )
     }
     
