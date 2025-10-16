@@ -212,9 +212,9 @@ struct PaymentView: View {
                 }
             }
             .sheet(isPresented: $showingPaymentSheet) {
-                if let paymentSheet = stripeService.paymentSheet {
+                if let clientSecret = stripeService.clientSecret {
                     PaymentSheetView(
-                        paymentSheet: paymentSheet,
+                        clientSecret: clientSecret,
                         onPaymentResult: { result in
                             showingPaymentSheet = false
                             print("Payment result: \(result)")

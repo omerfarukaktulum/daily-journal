@@ -1,14 +1,12 @@
 import Foundation
 import Combine
 import Stripe
-import StripePaymentSheet
 
 @MainActor
 class StripeService: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var clientSecret: String?
-    @Published var paymentSheet: PaymentSheet?
     
     private let publishableKey = "pk_test_51QejagQBQrhHPXtCwr1r1MVXRwc3DTDQDl3a8jmrmuooFdekdft48GPXSArPN0zTfkjte3hXL5Ee3ChLNlFeVDBY00ao2NdQ3w"
     private let backendURL = "http://localhost:3000" // Change to your deployed backend URL
@@ -18,7 +16,7 @@ class StripeService: ObservableObject {
         StripeAPI.defaultPublishableKey = publishableKey
     }
     
-    // MARK: - Create Payment Intent for PaymentSheet
+    // MARK: - Setup Payment Intent
     func setupPayment(amount: Int, currency: String = "usd", plan: String = "monthly") async throws {
         print("🔧 StripeService: Setting up payment for amount: \(amount), currency: \(currency), plan: \(plan)")
         isLoading = true
@@ -30,26 +28,6 @@ class StripeService: ObservableObject {
         print("🔧 StripeService: Creating payment intent...")
         clientSecret = try await createPaymentIntent(amount: amount, currency: currency, plan: plan)
         print("🔧 StripeService: Client secret received: \(clientSecret?.prefix(20) ?? "nil")...")
-        
-        // Create PaymentSheet
-        guard let clientSecret = clientSecret else {
-            print("❌ StripeService: No client secret received")
-            throw StripeError.invalidClientSecret
-        }
-        
-        print("🔧 StripeService: Creating PaymentSheet...")
-        var configuration = PaymentSheet.Configuration()
-        configuration.merchantDisplayName = "Memora"
-        configuration.returnURL = "memora://stripe-redirect"
-        
-        // Configure payment methods to avoid Apple Pay delegate issues
-        configuration.allowsDelayedPaymentMethods = true
-        
-        // Disable Apple Pay to avoid delegate signature issues
-        configuration.applePay = nil
-        
-        paymentSheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
-        print("✅ StripeService: PaymentSheet created successfully")
     }
     
     // MARK: - Create Payment Intent (Real Backend Implementation)
