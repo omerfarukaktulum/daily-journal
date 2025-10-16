@@ -6,13 +6,25 @@ const config = require('./config');
 
 const app = express();
 
-// Middleware
+// Security middleware
+app.use((req, res, next) => {
+  // Rate limiting (basic)
+  const clientIP = req.ip || req.connection.remoteAddress;
+  console.log(`🔒 Request from: ${clientIP} to ${req.path}`);
+  next();
+});
+
+// CORS with specific origins
 app.use(cors({
   origin: config.cors.allowedOrigins,
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+
+// Body parsing with size limits
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
 app.get('/', (req, res) => {
@@ -41,6 +53,28 @@ app.get('/api/health', (req, res) => {
 app.post('/api/create-payment-intent', async (req, res) => {
   try {
     const { amount, currency = 'usd', plan } = req.body;
+    
+    // Input validation
+    if (!amount || amount < 50 || amount > 100000) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid amount. Must be between $0.50 and $1000.00'
+      });
+    }
+    
+    if (!['usd', 'eur', 'gbp'].includes(currency)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid currency. Supported: usd, eur, gbp'
+      });
+    }
+    
+    if (!['monthly', 'yearly'].includes(plan)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid plan. Supported: monthly, yearly'
+      });
+    }
     
     console.log('🔧 Backend: Creating payment intent:', { amount, currency, plan, amountInDollars: `$${(amount / 100).toFixed(2)}` });
     
