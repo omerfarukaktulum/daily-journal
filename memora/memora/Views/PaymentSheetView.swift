@@ -1,6 +1,5 @@
 import SwiftUI
 import Stripe
-import StripePaymentSheet
 
 struct PaymentSheetView: View {
     let clientSecret: String
