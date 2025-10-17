@@ -8,7 +8,7 @@
 import Foundation
 
 struct Config {
-    static let environment: Environment = {
+    static let environment: AppEnvironment = {
         #if DEBUG
         return .development
         #else
@@ -44,7 +44,7 @@ struct Config {
     }
 }
 
-enum Environment {
+enum AppEnvironment {
     case development
     case production
 }

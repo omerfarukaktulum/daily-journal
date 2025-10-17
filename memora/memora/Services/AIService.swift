@@ -166,9 +166,5 @@ struct CaptionGenerationResponse: Codable {
     let caption: String
 }
 
-struct BackendErrorResponse: Codable {
-    let success: Bool
-    let error: String
-}
 
 
