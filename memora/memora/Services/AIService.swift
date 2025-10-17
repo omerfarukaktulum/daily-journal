@@ -13,42 +13,8 @@ class AIService: ObservableObject {
     private let backendURL = Config.backendURL
     
     init() {
-        // Read API key from Keychain (secure storage)
-        let keychainKey = KeychainService.shared.load(key: "openai_api_key")
-        let envKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"]
-        
-        // Debug logging
-        print("🔑 API Key Sources:")
-        print("   - Keychain: \(keychainKey?.prefix(10) ?? "nil")...")
-        print("   - Environment: \(envKey?.prefix(10) ?? "nil")...")
-        
-        self.apiKey = keychainKey ?? envKey ?? "YOUR_API_KEY_HERE"
-        
-        print("   - Final key: \(self.apiKey.prefix(10))...")
-    }
-    
-    // MARK: - Save API Key Securely
-    func saveAPIKey(_ key: String) -> Bool {
-        return KeychainService.shared.save(key: "openai_api_key", value: key)
-    }
-    
-    // MARK: - Check if API Key is Set
-    func hasAPIKey() -> Bool {
-        return !apiKey.isEmpty && apiKey != "YOUR_API_KEY_HERE"
-    }
-    
-    // MARK: - Debug: Show Key Source
-    func getKeySource() -> String {
-        let keychainKey = KeychainService.shared.load(key: "openai_api_key")
-        let envKey = ProcessInfo.processInfo.environment["OPENAI_API_KEY"]
-        
-        if keychainKey != nil {
-            return "Keychain (secure)"
-        } else if envKey != nil {
-            return "Environment (development)"
-        } else {
-            return "Default (not set)"
-        }
+        // No API key needed - using server-side AI
+        print("🤖 AIService: Using server-side AI (no API key required)")
     }
     
     func improveText(_ text: String) async throws -> [String] {

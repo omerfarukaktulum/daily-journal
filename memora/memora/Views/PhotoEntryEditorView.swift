@@ -42,7 +42,6 @@ struct PhotoEntryEditorView: View {
     @State private var isLoadingAI = false
     @State private var showingPremiumSheet = false
     @State private var showingDailyLimitAlert = false
-    @State private var showingAPIKeyAlert = false
     @State private var showingNoPhotosAlert = false
     @State private var usedAI = false
     
@@ -484,11 +483,6 @@ struct PhotoEntryEditorView: View {
             } message: {
                 Text("You've used all 5 AI improvements for today. Come back tomorrow for more AI-powered enhancements!")
             }
-            .alert("API Key Required", isPresented: $showingAPIKeyAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("Please configure your OpenAI API key in Settings to use AI features.")
-            }
             .alert("No Photos Added", isPresented: $showingNoPhotosAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
@@ -622,11 +616,6 @@ struct PhotoEntryEditorView: View {
                     usedAI = true
                     isGeneratingCaption = false
                 }
-            } catch AIServiceError.apiKeyNotConfigured {
-                await MainActor.run {
-                    isGeneratingCaption = false
-                    showingAPIKeyAlert = true
-                }
             } catch {
                 await MainActor.run {
                     isGeneratingCaption = false
@@ -665,11 +654,6 @@ struct PhotoEntryEditorView: View {
                     appState.incrementAIUsage()
                     isLoadingAI = false
                     showingAIImprovement = true
-                }
-            } catch AIServiceError.apiKeyNotConfigured {
-                await MainActor.run {
-                    isLoadingAI = false
-                    showingAPIKeyAlert = true
                 }
             } catch {
                 await MainActor.run {

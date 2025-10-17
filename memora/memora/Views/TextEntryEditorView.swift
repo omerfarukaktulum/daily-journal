@@ -37,8 +37,6 @@ struct TextEntryEditorView: View {
     @State private var isLoadingAI = false
     @State private var showingPremiumSheet = false
     @State private var showingDailyLimitAlert = false
-    @State private var showingAPIKeyAlert = false
-    @State private var apiKeyInput = ""
     @State private var usedAI = false // Track if AI was used
     
     @StateObject private var aiService = AIService()
@@ -372,19 +370,6 @@ struct TextEntryEditorView: View {
             } message: {
                 Text("You've used all 5 AI improvements for today. Come back tomorrow for more AI-powered enhancements!")
             }
-            .alert("OpenAI API Key Required", isPresented: $showingAPIKeyAlert) {
-                TextField("Enter your OpenAI API key", text: $apiKeyInput)
-                Button("Save") {
-                    // Save to Keychain for security
-                    KeychainService.shared.save(key: "openai_api_key", value: apiKeyInput)
-                    apiKeyInput = ""
-                }
-                Button("Cancel", role: .cancel) {
-                    apiKeyInput = ""
-                }
-            } message: {
-                Text("To use AI features, please enter your OpenAI API key. You can get one from platform.openai.com/api-keys")
-            }
             .sheet(isPresented: $showingDatePicker) {
                 VStack(spacing: 0) {
                     // Just the Calendar - clean and simple
@@ -535,11 +520,6 @@ struct TextEntryEditorView: View {
                     appState.incrementAIUsage()
                     isLoadingAI = false
                     showingAIImprovement = true
-                }
-            } catch AIServiceError.apiKeyNotConfigured {
-                await MainActor.run {
-                    isLoadingAI = false
-                    showingAPIKeyAlert = true
                 }
             } catch {
                 await MainActor.run {
